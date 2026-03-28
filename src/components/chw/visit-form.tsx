@@ -221,7 +221,7 @@ export function VisitForm({ households }: VisitFormProps) {
       <div className="space-y-4">
         {SCREENING_SIGNALS.map((signal, index) => {
           const currentValue = responses[signal.key as keyof VisitResponses];
-          const signalLabel = locale === 'ne' ? signal.label_ne : signal.label_en;
+          const signalLabel = locale === 'ne' ? signal.question_ne : signal.label_en;
 
           return (
             <Card key={signal.key}>
