@@ -1,0 +1,260 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  
+  /* Organic health aesthetic custom colors */
+  --color-sage: #5B7553;
+  --color-sage-light: #7A9B71;
+  --color-sage-dark: #3D5235;
+  --color-ivory: #FAFAF5;
+  --color-ivory-dark: #F0F0E8;
+  --color-terracotta: #C67B5C;
+  --color-terracotta-light: #D99B7E;
+  --color-amber: #D4A574;
+  --color-stone: #8B8B83;
+}
+
+/* Organic Health Theme - Warm, Calm, Trustworthy */
+:root {
+  /* Warm ivory background */
+  --background: oklch(0.98 0.005 85);
+  --foreground: oklch(0.20 0.02 50);
+  
+  /* Cards with subtle warmth */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.02 50);
+  
+  /* Popover matching cards */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.02 50);
+  
+  /* Sage green as primary - organic, natural */
+  --primary: oklch(0.48 0.09 145);
+  --primary-foreground: oklch(0.98 0.005 85);
+  
+  /* Soft stone secondary */
+  --secondary: oklch(0.94 0.01 85);
+  --secondary-foreground: oklch(0.30 0.02 50);
+  
+  /* Muted - warm gray */
+  --muted: oklch(0.96 0.008 80);
+  --muted-foreground: oklch(0.50 0.02 50);
+  
+  /* Accent - terracotta for warmth */
+  --accent: oklch(0.72 0.12 40);
+  --accent-foreground: oklch(0.98 0.005 85);
+  
+  /* Destructive - soft red */
+  --destructive: oklch(0.58 0.22 25);
+  
+  /* Borders and inputs - soft, warm */
+  --border: oklch(0.90 0.01 80);
+  --input: oklch(0.90 0.01 80);
+  --ring: oklch(0.48 0.09 145);
+  
+  /* Charts - organic palette */
+  --chart-1: oklch(0.48 0.09 145);
+  --chart-2: oklch(0.72 0.12 40);
+  --chart-3: oklch(0.65 0.15 60);
+  --chart-4: oklch(0.70 0.10 180);
+  --chart-5: oklch(0.55 0.08 30);
+  
+  /* Soft rounded corners - organic feel */
+  --radius: 1rem;
+  
+  /* Sidebar - warm */
+  --sidebar: oklch(0.97 0.008 85);
+  --sidebar-foreground: oklch(0.20 0.02 50);
+  --sidebar-primary: oklch(0.48 0.09 145);
+  --sidebar-primary-foreground: oklch(0.98 0.005 85);
+  --sidebar-accent: oklch(0.94 0.01 85);
+  --sidebar-accent-foreground: oklch(0.30 0.02 50);
+  --sidebar-border: oklch(0.90 0.01 80);
+  --sidebar-ring: oklch(0.48 0.09 145);
+}
+
+.dark {
+  /* Dark mode - deeper, still warm */
+  --background: oklch(0.15 0.01 145);
+  --foreground: oklch(0.95 0.005 85);
+  
+  --card: oklch(0.18 0.012 145);
+  --card-foreground: oklch(0.95 0.005 85);
+  
+  --popover: oklch(0.18 0.012 145);
+  --popover-foreground: oklch(0.95 0.005 85);
+  
+  --primary: oklch(0.65 0.10 145);
+  --primary-foreground: oklch(0.15 0.01 145);
+  
+  --secondary: oklch(0.24 0.015 145);
+  --secondary-foreground: oklch(0.95 0.005 85);
+  
+  --muted: oklch(0.24 0.015 145);
+  --muted-foreground: oklch(0.70 0.01 85);
+  
+  --accent: oklch(0.55 0.15 40);
+  --accent-foreground: oklch(0.95 0.005 85);
+  
+  --destructive: oklch(0.65 0.20 25);
+  
+  --border: oklch(0.28 0.02 145);
+  --input: oklch(0.28 0.02 145);
+  --ring: oklch(0.65 0.10 145);
+  
+  --chart-1: oklch(0.65 0.10 145);
+  --chart-2: oklch(0.55 0.15 40);
+  --chart-3: oklch(0.60 0.12 60);
+  --chart-4: oklch(0.55 0.08 180);
+  --chart-5: oklch(0.50 0.10 30);
+  
+  --sidebar: oklch(0.18 0.012 145);
+  --sidebar-foreground: oklch(0.95 0.005 85);
+  --sidebar-primary: oklch(0.65 0.10 145);
+  --sidebar-primary-foreground: oklch(0.15 0.01 145);
+  --sidebar-accent: oklch(0.24 0.015 145);
+  --sidebar-accent-foreground: oklch(0.95 0.005 85);
+  --sidebar-border: oklch(0.28 0.02 145);
+  --sidebar-ring: oklch(0.65 0.10 145);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Custom organic utility classes */
+@layer utilities {
+  .bg-organic-gradient {
+    background: linear-gradient(
+      to bottom right,
+      oklch(0.98 0.005 85),
+      oklch(0.94 0.02 100),
+      oklch(0.96 0.015 130)
+    );
+  }
+  
+  .bg-hero-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.98 0.005 85) 0%,
+      oklch(0.94 0.02 100) 50%,
+      oklch(0.92 0.03 145) 100%
+    );
+  }
+  
+  .text-organic-primary {
+    color: oklch(0.48 0.09 145);
+  }
+  
+  .text-organic-secondary {
+    color: oklch(0.50 0.02 50);
+  }
+  
+  .border-organic {
+    border-color: oklch(0.88 0.02 80);
+  }
+  
+  .shadow-organic {
+    box-shadow: 0 4px 20px -4px oklch(0.40 0.04 145 / 0.15);
+  }
+  
+  .shadow-organic-lg {
+    box-shadow: 0 8px 40px -8px oklch(0.40 0.04 145 / 0.2);
+  }
+}
+
+/* Risk level indicator styles */
+.risk-low {
+  @apply bg-emerald-50 text-emerald-700 border-emerald-200;
+}
+
+.risk-moderate {
+  @apply bg-amber-50 text-amber-700 border-amber-200;
+}
+
+.risk-high {
+  @apply bg-orange-50 text-orange-700 border-orange-200;
+}
+
+.risk-critical {
+  @apply bg-red-50 text-red-700 border-red-200;
+}
+
+/* Smooth animations for transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 640px) {
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
