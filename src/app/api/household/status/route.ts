@@ -30,8 +30,32 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: [{ path: '', message: 'Request body must be valid JSON' }],
+        },
+        { status: 422 }
+      );
+    }
     const { household_id, status } = validateOrThrow(householdStatusRequestSchema, body);
+
+    const { data: household, error: householdError } = await supabase
+      .from('households')
+      .select('id')
+      .eq('id', household_id)
+      .single();
+
+    if (householdError || !household) {
+      return NextResponse.json(
+        { error: 'Household not found' },
+        { status: 404 }
+      );
+    }
 
     // Update household status
     const { error: updateError } = await supabase

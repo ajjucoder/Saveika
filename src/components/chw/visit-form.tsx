@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DisclaimerBanner } from '@/components/shared/disclaimer-banner';
 import { RiskBadge } from '@/components/shared/risk-badge';
 import { useLanguage } from '@/providers/language-provider';
-import { SCREENING_SIGNALS, RESPONSE_OPTIONS } from '@/lib/signals';
+import { SCREENING_SIGNALS, RESPONSE_OPTIONS, SIGNAL_KEYS } from '@/lib/signals';
 import { cn } from '@/lib/utils';
 import type { Household, VisitResponses, SignalValue, ScoreResponse } from '@/lib/types';
 
@@ -21,30 +21,25 @@ interface VisitFormProps {
   households: Household[];
 }
 
-const INITIAL_RESPONSES: VisitResponses = {
-  sleep: 0,
-  appetite: 0,
-  withdrawal: 0,
-  trauma: 0,
-  activities: 0,
-  hopelessness: 0,
-  substance: 0,
-  self_harm: 0,
-};
+type DraftResponses = Partial<Record<keyof VisitResponses, SignalValue>>;
 
 export function VisitForm({ households }: VisitFormProps) {
   const router = useRouter();
   const { t, locale } = useLanguage();
   
   const [selectedHousehold, setSelectedHousehold] = useState<string>('');
-  const [responses, setResponses] = useState<VisitResponses>(INITIAL_RESPONSES);
+  const [responses, setResponses] = useState<DraftResponses>({});
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScoreResponse | null>(null);
   const [showFallbackToast, setShowFallbackToast] = useState(false);
 
-  const handleResponseChange = useCallback((key: string, value: SignalValue) => {
+  const allSignalsAnswered = SIGNAL_KEYS.every(
+    (key) => responses[key as keyof VisitResponses] !== undefined
+  );
+
+  const handleResponseChange = useCallback((key: keyof VisitResponses, value: SignalValue) => {
     setResponses((prev) => ({ ...prev, [key]: value }));
   }, []);
 
@@ -53,18 +48,27 @@ export function VisitForm({ households }: VisitFormProps) {
       setError(t('visit.selectHousehold') || 'Please select a household');
       return;
     }
+    if (!allSignalsAnswered) {
+      setError(t('visit.completeAllSignals') || 'Please answer all screening questions');
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
     setShowFallbackToast(false);
 
     try {
+      const completedResponses = SIGNAL_KEYS.reduce((acc, key) => {
+        acc[key as keyof VisitResponses] = responses[key as keyof VisitResponses] as SignalValue;
+        return acc;
+      }, {} as VisitResponses);
+
       const res = await fetch('/api/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           household_id: selectedHousehold,
-          responses,
+          responses: completedResponses,
           notes: notes || undefined,
         }),
       });
@@ -91,7 +95,7 @@ export function VisitForm({ households }: VisitFormProps) {
 
   const handleReset = () => {
     setSelectedHousehold('');
-    setResponses(INITIAL_RESPONSES);
+    setResponses({});
     setNotes('');
     setResult(null);
     setError(null);
@@ -199,9 +203,9 @@ export function VisitForm({ households }: VisitFormProps) {
                       {signalLabel}
                     </Label>
                     <RadioGroup
-                      value={String(currentValue)}
+                      value={currentValue === undefined ? '' : String(currentValue)}
                       onValueChange={(val) => 
-                        handleResponseChange(signal.key, parseInt(val) as SignalValue)
+                        handleResponseChange(signal.key as keyof VisitResponses, parseInt(val) as SignalValue)
                       }
                       className="grid grid-cols-2 sm:grid-cols-4 gap-2"
                     >
@@ -269,7 +273,7 @@ export function VisitForm({ households }: VisitFormProps) {
         size="lg"
         className="w-full"
         onClick={handleSubmit}
-        disabled={isSubmitting || !selectedHousehold}
+        disabled={isSubmitting || !selectedHousehold || !allSignalsAnswered}
       >
         {isSubmitting ? (
           <>

@@ -10,8 +10,9 @@ import { useLanguage } from '@/providers/language-provider';
 import { formatDate } from '@/lib/utils';
 import type { Visit, Household, Profile, Area } from '@/lib/types';
 
+// Safe type that excludes PII (head_name) - matches server component type
 type VisitWithDetails = Visit & {
-  households: Pick<Household, 'code' | 'head_name' | 'area_id'> & {
+  households: Pick<Household, 'code' | 'area_id'> & {
     areas: Pick<Area, 'name' | 'name_ne'> | null;
   };
   profiles: Pick<Profile, 'full_name'>;

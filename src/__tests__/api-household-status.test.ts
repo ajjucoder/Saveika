@@ -14,6 +14,9 @@ const mockProfileEq = vi.fn();
 const mockProfileSingle = vi.fn();
 
 // Household update chain
+const mockHouseholdSelect = vi.fn();
+const mockHouseholdSelectEq = vi.fn();
+const mockHouseholdSingle = vi.fn();
 const mockHouseholdUpdate = vi.fn();
 const mockHouseholdEq = vi.fn();
 
@@ -31,7 +34,13 @@ beforeEach(() => {
   // Reset all mock implementations
   mockProfileSelect.mockReturnValue({ eq: mockProfileEq });
   mockProfileEq.mockReturnValue({ single: mockProfileSingle });
+  mockHouseholdSelect.mockReturnValue({ eq: mockHouseholdSelectEq });
+  mockHouseholdSelectEq.mockReturnValue({ single: mockHouseholdSingle });
   mockHouseholdUpdate.mockReturnValue({ eq: mockHouseholdEq });
+  mockHouseholdSingle.mockResolvedValue({
+    data: { id: 'household-123' },
+    error: null,
+  });
   // Default: eq resolves to success
   mockHouseholdEq.mockResolvedValue({ error: null });
   mockProfileSingle.mockResolvedValue({ data: null, error: null });
@@ -47,8 +56,10 @@ beforeEach(() => {
     }
     if (tableName === 'households') {
       return {
+        select: mockHouseholdSelect,
         update: mockHouseholdUpdate,
         eq: mockHouseholdEq,
+        single: mockHouseholdSingle,
       };
     }
     return {
@@ -445,6 +456,40 @@ describe('PATCH /api/household/status', () => {
     });
   });
 
+  describe('404 Not Found - Household Does Not Exist', () => {
+    beforeEach(() => {
+      mockGetUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      mockProfileSingle.mockResolvedValue({
+        data: mockSupervisorProfile,
+        error: null,
+      });
+    });
+
+    it('should return 404 when household_id does not match any row', async () => {
+      // Simulate update that matches no rows (Supabase returns success with no error)
+      mockHouseholdSingle.mockResolvedValue({
+        data: null,
+        error: { message: 'No rows found' },
+      });
+
+      const request = new Request('http://localhost/api/household/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validRequest),
+      });
+
+      const response = await PATCH(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(data.error).toBe('Household not found');
+    });
+  });
+
   describe('Error Handling', () => {
     beforeEach(() => {
       mockGetUser.mockResolvedValue({
@@ -498,7 +543,7 @@ describe('PATCH /api/household/status', () => {
       expect(data.error).toBe('Internal server error');
     });
 
-    it('should return 500 when request body is not valid JSON', async () => {
+    it('should return 422 when request body is malformed JSON', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const request = new Request('http://localhost/api/household/status', {
@@ -510,8 +555,11 @@ describe('PATCH /api/household/status', () => {
       const response = await PATCH(request);
       const data = await response.json();
 
-      expect(response.status).toBe(500);
-      expect(data.error).toBe('Internal server error');
+      expect(response.status).toBe(422);
+      expect(data.error).toBe('Validation failed');
+      expect(data.details).toEqual([
+        { path: '', message: 'Request body must be valid JSON' },
+      ]);
     });
   });
 });

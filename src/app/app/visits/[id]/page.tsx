@@ -3,8 +3,9 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { VisitDetailClient } from '@/components/chw/visit-detail-client';
 import type { Visit, Household, Profile, Area } from '@/lib/types';
 
+// Safe type for client component - excludes PII like head_name
 type VisitWithDetails = Visit & {
-  households: Pick<Household, 'code' | 'head_name' | 'area_id'> & {
+  households: Pick<Household, 'code' | 'area_id'> & {
     areas: Pick<Area, 'name' | 'name_ne'> | null;
   };
   profiles: Pick<Profile, 'full_name'>;
@@ -21,13 +22,13 @@ export default async function VisitDetailPage({ params }: VisitDetailPageProps) 
   const supabase = await getSupabaseServerClient();
 
   // Fetch visit with household and CHW details
+  // Note: head_name is intentionally NOT selected to avoid PII leak
   const { data: visit, error } = await supabase
     .from('visits')
     .select(`
       *,
       households (
         code,
-        head_name,
         area_id,
         areas (
           name,
