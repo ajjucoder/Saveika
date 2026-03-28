@@ -5,6 +5,51 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getRedirectPathForRole } from '@/lib/auth';
+import { getSupabaseAdminClient } from '@/lib/supabase/admin';
+
+function isLocalDevelopmentOrigin(origin: string) {
+  return process.env.NODE_ENV !== 'production' &&
+    (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1'));
+}
+
+async function provisionDevelopmentProfile(user: {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    name?: string;
+    avatar_url?: string;
+  };
+}) {
+  if (!user.email) {
+    return null;
+  }
+
+  const admin = getSupabaseAdminClient();
+  const fullName = user.user_metadata?.full_name ??
+    user.user_metadata?.name ??
+    user.email.split('@')[0];
+
+  const { data: profile, error } = await admin
+    .from('profiles')
+    .insert({
+      id: user.id,
+      email: user.email,
+      full_name: fullName,
+      avatar_url: user.user_metadata?.avatar_url ?? null,
+      role: 'chw',
+      area_id: null,
+    })
+    .select()
+    .single();
+
+  if (error || !profile) {
+    console.error('Failed to provision development profile:', error);
+    return null;
+  }
+
+  return profile;
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -69,6 +114,17 @@ export async function GET(request: Request) {
   if (profileError || !profile) {
     // Profile doesn't exist - reject access
     console.error('No profile found for user:', user.id);
+
+    if (isLocalDevelopmentOrigin(origin)) {
+      const developmentProfile = await provisionDevelopmentProfile(user);
+
+      if (developmentProfile) {
+        const redirectPath = getRedirectPathForRole(developmentProfile.role);
+        return NextResponse.redirect(`${origin}${redirectPath}`);
+      }
+    }
+
+    await supabase.auth.signOut();
     return NextResponse.redirect(`${origin}/login?error=no_account`);
   }
 
