@@ -2,12 +2,10 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, ClipboardList, FileText, CheckCircle2, Plus, Search, X, MapPin, Hash, User2, Building2 } from 'lucide-react';
+import { Loader2, AlertCircle, FileText, Plus, Search, X, MapPin, Hash, User2, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -318,7 +316,7 @@ export function VisitForm({ households }: VisitFormProps) {
                     <button
                       key={gender}
                       type="button"
-                      onClick={() => setPatientGender(gender)}
+                      onClick={() => setPatientGender(prev => prev === gender ? '' : gender)}
                       className={cn(
                         'flex-1 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-200',
                         'border-2',
@@ -561,114 +559,113 @@ export function VisitForm({ households }: VisitFormProps) {
         </Card>
       </div>
 
-      {/* Progress Card - Sticky and Compact */}
-      <Card className="sticky top-4 z-10 border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
-        <CardContent className="px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <Progress 
-                value={progressValue} 
-                className="h-1.5 bg-muted"
-              />
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              {progressValue === 100 ? (
-                <CheckCircle2 className="size-4 text-green-600" />
-              ) : (
-                <ClipboardList className="size-4 text-muted-foreground" />
-              )}
-              <span className={cn(
-                "font-medium tabular-nums",
-                progressValue === 100 ? "text-green-600" : "text-muted-foreground"
-              )}>
-                {answeredCount}/{SIGNAL_KEYS.length}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Progress Indicator - Elegant Minimal Design */}
+      <div className="flex items-center gap-4 px-1">
+        <div className="flex-1">
+          <Progress
+            value={progressValue}
+            className="h-1 bg-muted/50"
+          />
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className={cn(
+            "font-semibold tabular-nums",
+            progressValue === 100 ? "text-green-600" : "text-[var(--color-sage-dark)]"
+          )}>
+            {answeredCount}
+          </span>
+          <span className="text-muted-foreground/60">/</span>
+          <span className="text-muted-foreground tabular-nums">{SIGNAL_KEYS.length}</span>
+        </div>
+      </div>
 
-      {/* Screening Questions - ALL in ONE Card */}
-      <Card>
-        <CardHeader className="pb-2 pt-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <ClipboardList className="size-4 text-primary" />
-            {t('visit.screeningQuestions') || 'Screening Questions'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 flex flex-col">
+      {/* Screening Questions - Refined Card-Based Design */}
+      <div className="space-y-1">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-sage-dark)]/70 px-1">
+          {t('visit.screeningQuestions') || 'Screening Questions'}
+        </h2>
+        
+        <div className="space-y-3">
           {SCREENING_SIGNALS.map((signal, index) => {
             const currentValue = responses[signal.key as keyof VisitResponses];
             const signalLabel = locale === 'ne' ? signal.question_ne : signal.label_en;
-            const isLast = index === SCREENING_SIGNALS.length - 1;
+            const isAnswered = currentValue !== undefined;
 
             return (
-              <div key={signal.key}>
-                <div className="flex items-start gap-3 py-3">
-                  {/* Question Number Badge */}
-                  <span className={cn(
-                    "flex-shrink-0 size-6 rounded-full flex items-center justify-center text-xs font-semibold",
-                    currentValue !== undefined 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted text-muted-foreground"
-                  )}>
-                    {index + 1}
-                  </span>
-
-                  {/* Question Content */}
-                  <div className="flex-1 min-w-0 flex flex-col gap-3">
-                    <Label className="text-sm leading-relaxed">
-                      {signalLabel}
-                    </Label>
+              <Card 
+                key={signal.key} 
+                className={cn(
+                  "border-0 shadow-sm overflow-hidden transition-all duration-300",
+                  isAnswered 
+                    ? "bg-gradient-to-r from-[var(--color-sage)]/5 via-white to-white ring-1 ring-[var(--color-sage)]/20" 
+                    : "bg-white hover:shadow-md"
+                )}
+              >
+                <CardContent className="p-0">
+                  <div className="p-4 sm:p-5">
+                    {/* Question Header */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className={cn(
+                        "flex-shrink-0 size-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors",
+                        isAnswered 
+                          ? "bg-[var(--color-sage)] text-white" 
+                          : "bg-muted/50 text-muted-foreground"
+                      )}>
+                        {index + 1}
+                      </div>
+                      <p className="flex-1 text-sm leading-relaxed font-medium text-foreground/90 pt-0.5">
+                        {signalLabel}
+                      </p>
+                    </div>
                     
-                    {/* Response Options - Pill buttons */}
-                    <RadioGroup
-                      value={currentValue === undefined ? '' : String(currentValue)}
-                      onValueChange={(val) => 
-                        handleResponseChange(signal.key as keyof VisitResponses, parseInt(val) as SignalValue)
-                      }
-                      className="grid grid-cols-2 sm:grid-cols-4 gap-2"
-                    >
+                    {/* Response Options - Modern Button Group */}
+                    <div className="flex flex-wrap gap-2">
                       {RESPONSE_OPTIONS.map((option) => {
                         const optionLabel = locale === 'ne' ? option.label_ne : option.label_en;
                         const isSelected = currentValue === option.value;
 
                         return (
-                          <div key={option.value}>
-                            <RadioGroupItem
-                              value={String(option.value)}
-                              id={`${signal.key}-${option.value}`}
-                              className="peer sr-only"
-                            />
-                            <Label
-                              htmlFor={`${signal.key}-${option.value}`}
-                              className={cn(
-                                'flex items-center justify-center text-center',
-                                'rounded-full border px-3 py-1.5 cursor-pointer',
-                                'text-xs font-medium transition-all',
-                                'hover:bg-accent hover:text-accent-foreground',
-                                'peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2',
-                                isSelected && 'bg-primary text-primary-foreground border-primary',
-                                isSelected && option.value === 3 && 'bg-destructive text-destructive-foreground border-destructive',
-                                isSelected && option.value === 0 && 'bg-[var(--color-sage)]/80 text-white border-[var(--color-sage)]'
-                              )}
-                            >
-                              {optionLabel}
-                            </Label>
-                          </div>
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              // Toggle: if already selected, unselect it
+                              if (currentValue === option.value) {
+                                const newResponses = { ...responses };
+                                delete newResponses[signal.key as keyof VisitResponses];
+                                setResponses(newResponses);
+                              } else {
+                                handleResponseChange(signal.key as keyof VisitResponses, option.value);
+                              }
+                            }}
+                            className={cn(
+                              'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200',
+                              'border-2 min-w-[80px]',
+                              'focus:outline-none focus:ring-2 focus:ring-[var(--color-sage)]/30 focus:ring-offset-1',
+                              // Not selected state
+                              !isSelected && 'bg-transparent border-border/40 text-muted-foreground hover:border-[var(--color-sage)]/40 hover:text-foreground',
+                              // Selected state - Not observed (green)
+                              isSelected && option.value === 0 && 'bg-[var(--color-sage)] border-[var(--color-sage)] text-white shadow-sm',
+                              // Selected state - Mild/sometimes (subtle teal)
+                              isSelected && option.value === 1 && 'bg-[var(--color-sage-light)] border-[var(--color-sage-light)] text-white shadow-sm',
+                              // Selected state - Significant/often (amber)
+                              isSelected && option.value === 2 && 'bg-amber-500 border-amber-500 text-white shadow-sm',
+                              // Selected state - Severe/persistent (red)
+                              isSelected && option.value === 3 && 'bg-red-500 border-red-500 text-white shadow-sm'
+                            )}
+                          >
+                            {optionLabel}
+                          </button>
                         );
                       })}
-                    </RadioGroup>
+                    </div>
                   </div>
-                </div>
-
-                {/* Separator between questions */}
-                {!isLast && <Separator className="my-0" />}
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Notes Section */}
       <Card>
