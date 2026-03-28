@@ -43,16 +43,20 @@ export interface Household {
   created_at: string;
 }
 
-// Visit responses - all 8 signals
+// Visit responses - all 12 screening signals
 export interface VisitResponses {
   sleep: SignalValue;
   appetite: SignalValue;
-  withdrawal: SignalValue;
-  trauma: SignalValue;
   activities: SignalValue;
   hopelessness: SignalValue;
+  withdrawal: SignalValue;
+  trauma: SignalValue;
+  fear_flashbacks: SignalValue;
+  psychosis_signs: SignalValue;
   substance: SignalValue;
+  substance_neglect: SignalValue;
   self_harm: SignalValue;
+  wish_to_die: SignalValue;
 }
 
 // Visit type

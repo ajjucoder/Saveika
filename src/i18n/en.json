@@ -25,7 +25,7 @@
       },
       "step2": {
         "title": "Screen",
-        "description": "Record 8 evidence-based warning signs using a simple mobile form"
+        "description": "Record 12 evidence-based warning signs using a simple mobile form"
       },
       "step3": {
         "title": "Flag",
@@ -35,7 +35,7 @@
     "features": {
       "title": "Key Features",
       "feature1": {
-        "title": "8-Signal Screening",
+        "title": "12-Signal Screening",
         "description": "WHO mhGAP-aligned behavioral indicators for early detection"
       },
       "feature2": {
@@ -110,16 +110,32 @@
       "description": "No longer engaging in routine activities"
     },
     "hopelessness": {
-      "label": "Expressed hopelessness",
+      "label": "Expressed hopelessness, worthlessness, or sadness",
       "description": "Verbalized feelings of hopelessness"
+    },
+    "fear_flashbacks": {
+      "label": "Visible fear, flashbacks, or extreme startle response",
+      "description": "Observable fear, flashbacks, or exaggerated startle response"
+    },
+    "psychosis_signs": {
+      "label": "Talking to self, strange beliefs, or confused speech",
+      "description": "Possible psychosis-related behavior or speech"
     },
     "substance": {
       "label": "Alcohol/substance use increase",
       "description": "Increased use of alcohol or substances"
     },
+    "substance_neglect": {
+      "label": "Neglecting family due to substance use",
+      "description": "Substance use affecting care for family responsibilities"
+    },
     "self_harm": {
       "label": "Self-harm indicators",
-      "description": "Signs of self-harm or suicidal thoughts"
+      "description": "Signs of self-harm or self-injury"
+    },
+    "wish_to_die": {
+      "label": "Expressed wish to die or not exist",
+      "description": "Verbalized a wish to die or not continue living"
     }
   },
   "responses": {
@@ -177,6 +193,7 @@
   "visit": {
     "selectHousehold": "Select Household",
     "chooseHousehold": "Choose a household...",
+    "progressTitle": "Screening progress",
     "notes": "Notes (Optional)",
     "notesPlaceholder": "Add any additional observations...",
     "notesDisplay": "Notes",
@@ -197,6 +214,7 @@
     "noVisits": "No visits yet. Your completed visits will appear here.",
     "notFound": "Visit not found",
     "networkError": "Network error. Your form data has been preserved. Please try again.",
+    "completeAllSignals": "Please answer all 12 screening questions.",
     "chw": "CHW"
   },
   "home": {

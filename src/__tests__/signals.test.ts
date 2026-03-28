@@ -12,14 +12,24 @@ import {
 } from '../lib/signals';
 
 describe('Screening Signals', () => {
-  it('should have exactly 8 signals', () => {
-    expect(SCREENING_SIGNALS).toHaveLength(8);
+  it('should have exactly 12 signals', () => {
+    expect(SCREENING_SIGNALS).toHaveLength(12);
   });
 
   it('should have all required keys', () => {
     const requiredKeys = [
-      'sleep', 'appetite', 'withdrawal', 'trauma',
-      'activities', 'hopelessness', 'substance', 'self_harm',
+      'sleep',
+      'appetite',
+      'activities',
+      'hopelessness',
+      'withdrawal',
+      'trauma',
+      'fear_flashbacks',
+      'psychosis_signs',
+      'substance',
+      'substance_neglect',
+      'self_harm',
+      'wish_to_die',
     ];
     const actualKeys = SCREENING_SIGNALS.map(s => s.key);
     expect(actualKeys.sort()).toEqual(requiredKeys.sort());
@@ -46,12 +56,17 @@ describe('Screening Signals', () => {
     });
   });
 
-  it('should weight self_harm highest (5)', () => {
-    const selfHarmWeight = SIGNAL_WEIGHTS['self_harm'];
+  it('should weight wish_to_die highest (6)', () => {
+    const wishToDieWeight = SIGNAL_WEIGHTS['wish_to_die'];
     Object.values(SIGNAL_WEIGHTS).forEach(weight => {
-      expect(selfHarmWeight).toBeGreaterThanOrEqual(weight);
+      expect(wishToDieWeight).toBeGreaterThanOrEqual(weight);
     });
-    expect(selfHarmWeight).toBe(5);
+    expect(wishToDieWeight).toBe(6);
+  });
+
+  it('should weight self_harm second highest (5)', () => {
+    expect(SIGNAL_WEIGHTS['self_harm']).toBe(5);
+    expect(SIGNAL_WEIGHTS['wish_to_die']).toBeGreaterThan(SIGNAL_WEIGHTS['self_harm']);
   });
 
   it('should weight sleep and appetite lowest (2)', () => {
@@ -59,11 +74,18 @@ describe('Screening Signals', () => {
     expect(SIGNAL_WEIGHTS['appetite']).toBe(2);
   });
 
+  it('should weight psychosis higher than trauma and fear signals', () => {
+    expect(SIGNAL_WEIGHTS['psychosis_signs']).toBe(4);
+    expect(SIGNAL_WEIGHTS['trauma']).toBe(3);
+    expect(SIGNAL_WEIGHTS['fear_flashbacks']).toBe(3);
+  });
+
   it('should calculate correct max weighted sum', () => {
     // Max sum = sum of (max_value * weight) for each signal
     // = 3 * sum of all weights
     const sumOfWeights = Object.values(SIGNAL_WEIGHTS).reduce((a, b) => a + b, 0);
     expect(MAX_WEIGHTED_SUM).toBe(3 * sumOfWeights);
+    expect(MAX_WEIGHTED_SUM).toBe(123);
   });
 });
 

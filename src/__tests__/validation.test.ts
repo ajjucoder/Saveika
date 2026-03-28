@@ -13,8 +13,9 @@ describe('Request Validation', () => {
   describe('visitResponsesSchema', () => {
     it('should accept valid response values (0-3)', () => {
       const validResponses = {
-        sleep: 0, appetite: 1, withdrawal: 2, trauma: 3,
-        activities: 0, hopelessness: 1, substance: 2, self_harm: 3,
+        sleep: 0, appetite: 1, activities: 0, hopelessness: 1,
+        withdrawal: 2, trauma: 3, fear_flashbacks: 1, psychosis_signs: 0,
+        substance: 2, substance_neglect: 1, self_harm: 3, wish_to_die: 0,
       };
       const result = visitResponsesSchema.safeParse(validResponses);
       expect(result.success).toBe(true);
@@ -22,8 +23,9 @@ describe('Request Validation', () => {
 
     it('should reject values outside 0-3 range', () => {
       const invalidResponses = {
-        sleep: 4, appetite: 1, withdrawal: 2, trauma: 3,
-        activities: 0, hopelessness: 1, substance: 2, self_harm: 3,
+        sleep: 4, appetite: 1, activities: 0, hopelessness: 1,
+        withdrawal: 2, trauma: 3, fear_flashbacks: 1, psychosis_signs: 0,
+        substance: 2, substance_neglect: 1, self_harm: 3, wish_to_die: 0,
       };
       const result = visitResponsesSchema.safeParse(invalidResponses);
       expect(result.success).toBe(false);
@@ -31,9 +33,10 @@ describe('Request Validation', () => {
 
     it('should reject missing fields', () => {
       const incompleteResponses = {
-        sleep: 0, appetite: 1, withdrawal: 2, trauma: 3,
-        activities: 0, hopelessness: 1, substance: 2,
-        // missing self_harm
+        sleep: 0, appetite: 1, activities: 0, hopelessness: 1,
+        withdrawal: 2, trauma: 3, fear_flashbacks: 1, psychosis_signs: 0,
+        substance: 2, substance_neglect: 1, self_harm: 3,
+        // missing wish_to_die
       };
       const result = visitResponsesSchema.safeParse(incompleteResponses);
       expect(result.success).toBe(false);
@@ -41,8 +44,9 @@ describe('Request Validation', () => {
 
     it('should reject non-integer values', () => {
       const invalidResponses = {
-        sleep: 1.5, appetite: 1, withdrawal: 2, trauma: 3,
-        activities: 0, hopelessness: 1, substance: 2, self_harm: 3,
+        sleep: 1.5, appetite: 1, activities: 0, hopelessness: 1,
+        withdrawal: 2, trauma: 3, fear_flashbacks: 1, psychosis_signs: 0,
+        substance: 2, substance_neglect: 1, self_harm: 3, wish_to_die: 0,
       };
       const result = visitResponsesSchema.safeParse(invalidResponses);
       expect(result.success).toBe(false);
@@ -54,8 +58,9 @@ describe('Request Validation', () => {
       const validRequest = {
         household_id: '123e4567-e89b-12d3-a456-426614174000',
         responses: {
-          sleep: 0, appetite: 1, withdrawal: 2, trauma: 3,
-          activities: 0, hopelessness: 1, substance: 2, self_harm: 3,
+          sleep: 0, appetite: 1, activities: 0, hopelessness: 1,
+          withdrawal: 2, trauma: 3, fear_flashbacks: 1, psychosis_signs: 0,
+          substance: 2, substance_neglect: 1, self_harm: 3, wish_to_die: 0,
         },
         notes: 'Optional notes',
       };
@@ -67,8 +72,9 @@ describe('Request Validation', () => {
       const validRequest = {
         household_id: '123e4567-e89b-12d3-a456-426614174000',
         responses: {
-          sleep: 0, appetite: 1, withdrawal: 2, trauma: 3,
-          activities: 0, hopelessness: 1, substance: 2, self_harm: 3,
+          sleep: 0, appetite: 1, activities: 0, hopelessness: 1,
+          withdrawal: 2, trauma: 3, fear_flashbacks: 1, psychosis_signs: 0,
+          substance: 2, substance_neglect: 1, self_harm: 3, wish_to_die: 0,
         },
       };
       const result = scoreRequestSchema.safeParse(validRequest);
@@ -79,8 +85,9 @@ describe('Request Validation', () => {
       const invalidRequest = {
         household_id: 'not-a-uuid',
         responses: {
-          sleep: 0, appetite: 1, withdrawal: 2, trauma: 3,
-          activities: 0, hopelessness: 1, substance: 2, self_harm: 3,
+          sleep: 0, appetite: 1, activities: 0, hopelessness: 1,
+          withdrawal: 2, trauma: 3, fear_flashbacks: 1, psychosis_signs: 0,
+          substance: 2, substance_neglect: 1, self_harm: 3, wish_to_die: 0,
         },
       };
       const result = scoreRequestSchema.safeParse(invalidRequest);
@@ -91,8 +98,9 @@ describe('Request Validation', () => {
       const invalidRequest = {
         household_id: '123e4567-e89b-12d3-a456-426614174000',
         responses: {
-          sleep: 0, appetite: 1, withdrawal: 2, trauma: 3,
-          activities: 0, hopelessness: 1, substance: 2, self_harm: 3,
+          sleep: 0, appetite: 1, activities: 0, hopelessness: 1,
+          withdrawal: 2, trauma: 3, fear_flashbacks: 1, psychosis_signs: 0,
+          substance: 2, substance_neglect: 1, self_harm: 3, wish_to_die: 0,
         },
         notes: 'x'.repeat(1001),
       };

@@ -3,6 +3,7 @@
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/providers/language-provider';
 import { SCREENING_SIGNALS, RESPONSE_OPTIONS } from '@/lib/signals';
+import { normalizeVisitResponses } from '@/lib/visit-responses';
 import { cn } from '@/lib/utils';
 import type { VisitResponses } from '@/lib/types';
 
@@ -14,11 +15,12 @@ interface SignalBreakdownProps {
 
 export function SignalBreakdown({ responses, className, compact = false }: SignalBreakdownProps) {
   const { locale } = useLanguage();
+  const normalizedResponses = normalizeVisitResponses(responses);
 
   return (
     <div className={cn('space-y-3', compact && 'space-y-1.5', className)}>
       {SCREENING_SIGNALS.map((signal, index) => {
-        const value = responses[signal.key as keyof VisitResponses];
+        const value = normalizedResponses[signal.key as keyof VisitResponses];
         const signalLabel = locale === 'ne' ? signal.label_ne : signal.label_en;
         const responseOption = RESPONSE_OPTIONS.find((r) => r.value === value);
         const responseLabel = responseOption
