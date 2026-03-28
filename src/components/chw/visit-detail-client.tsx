@@ -1,14 +1,12 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, User2, FileText, Building2 } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RiskBadge } from '@/components/shared/risk-badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { SignalBreakdown } from '@/components/chw/signal-breakdown';
 import { useLanguage } from '@/providers/language-provider';
-import { formatDate } from '@/lib/utils';
-import type { Visit, Household, Profile, Area } from '@/lib/types';
+import { formatDate, cn } from '@/lib/utils';
+import type { Visit, Household, Profile, Area, RiskLevel } from '@/lib/types';
 
 // Safe type that excludes PII (head_name) - matches server component type
 type VisitWithDetails = Visit & {
@@ -21,6 +19,29 @@ type VisitWithDetails = Visit & {
 interface VisitDetailClientProps {
   visit: VisitWithDetails;
 }
+
+const RISK_COLORS: Record<RiskLevel, { gradient: string; dot: string; text: string }> = {
+  low: { 
+    gradient: 'from-emerald-500 to-emerald-600', 
+    dot: 'bg-emerald-400',
+    text: 'text-emerald-50'
+  },
+  moderate: { 
+    gradient: 'from-amber-500 to-amber-600', 
+    dot: 'bg-amber-400',
+    text: 'text-amber-50'
+  },
+  high: { 
+    gradient: 'from-orange-500 to-orange-600', 
+    dot: 'bg-orange-400',
+    text: 'text-orange-50'
+  },
+  critical: { 
+    gradient: 'from-red-500 to-red-600', 
+    dot: 'bg-red-400',
+    text: 'text-red-50'
+  },
+};
 
 export function VisitDetailClient({ visit }: VisitDetailClientProps) {
   const { locale, t } = useLanguage();
@@ -39,55 +60,90 @@ export function VisitDetailClient({ visit }: VisitDetailClientProps) {
 
   // Format date with current locale
   const formattedDate = formatDate(visit.visit_date, locale);
+  
+  // Risk colors
+  const riskStyle = RISK_COLORS[visit.risk_level];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Back Button */}
-      <Link href="/app/visits">
-        <Button variant="ghost" size="sm" className="mb-4 -ml-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('common.back')}
-        </Button>
+      <Link href="/app/visits" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <ArrowLeft className="size-4" />
+        {t('common.back')}
       </Link>
 
-      {/* Visit Header */}
-      <div>
-        <h1 className="text-xl font-bold">{visit.households.code}</h1>
-        <p className="text-sm text-muted-foreground">
-          {formattedDate}
-        </p>
-      </div>
-
-      {/* Risk Score Card */}
-      <Card className="border-2">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t('visit.riskAssessment')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">{t('visit.score')}</span>
-            <RiskBadge level={visit.risk_level} score={visit.total_score} showScore size="lg" />
+      {/* Visit Header Card */}
+      <Card className="border-0 shadow-lg overflow-hidden">
+        <CardContent className="p-0">
+          {/* Risk Banner */}
+          <div className={cn(
+            "p-5 bg-gradient-to-r",
+            riskStyle.gradient
+          )}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center size-11 rounded-xl bg-white/20 text-white">
+                  <Building2 className="size-5" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">
+                    {visit.households.code}
+                  </h1>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Calendar className="size-3 text-white/70" />
+                    <span className="text-xs text-white/80">{formattedDate}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-white tabular-nums">
+                  {visit.total_score}
+                </div>
+                <div className="text-xs text-white/80 uppercase tracking-wide">
+                  {t('visit.score')}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Risk Level Indicator */}
+          <div className="px-5 py-3 bg-muted/30 border-b border-border/30 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={cn("size-2 rounded-full", riskStyle.dot)} />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {t('visit.riskLevel')}
+              </span>
+            </div>
+            <span className="text-sm font-semibold text-foreground">
+              {visit.risk_level.charAt(0).toUpperCase() + visit.risk_level.slice(1)}
+            </span>
           </div>
         </CardContent>
       </Card>
 
       {/* Signal Breakdown */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t('visit.screeningResponses')}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="space-y-1 px-1">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-sage-dark)]/70">
+          {t('visit.screeningResponses')}
+        </h2>
+      </div>
+      
+      <Card className="border-0 shadow-sm bg-white overflow-hidden">
+        <CardContent className="p-4">
           <SignalBreakdown responses={visit.responses} />
         </CardContent>
       </Card>
 
       {/* Explanation */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t('visit.explanation')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+      <div className="space-y-1 px-1">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-sage-dark)]/70">
+          {t('visit.explanation')}
+        </h2>
+      </div>
+      
+      <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-[var(--color-ivory)]/30 overflow-hidden">
+        <CardContent className="p-4">
+          <p className="text-sm text-foreground/80 leading-relaxed">
             {explanation}
           </p>
         </CardContent>
@@ -95,30 +151,57 @@ export function VisitDetailClient({ visit }: VisitDetailClientProps) {
 
       {/* Notes (if any) */}
       {visit.notes && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{t('visit.notesDisplay')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">{visit.notes}</p>
-          </CardContent>
-        </Card>
+        <>
+          <div className="space-y-1 px-1">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-sage-dark)]/70">
+              {t('visit.notesDisplay')}
+            </h2>
+          </div>
+          
+          <Card className="border-0 shadow-sm bg-white overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex gap-3">
+                <FileText className="size-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-foreground/80">{visit.notes}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Visit Metadata */}
-      <Card className="bg-muted/50">
-        <CardContent className="p-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{t('visit.household')}</span>
-            <span>{visit.households.code}</span>
+      <div className="space-y-1 px-1">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-sage-dark)]/70">
+          Details
+        </h2>
+      </div>
+      
+      <Card className="border-0 shadow-sm bg-white overflow-hidden">
+        <CardContent className="p-0 divide-y divide-border/30">
+          <div className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Building2 className="size-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">{t('visit.household')}</span>
+            </div>
+            <span className="text-sm font-medium text-foreground">{visit.households.code}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{t('settings.area')}</span>
-            <span>{areaName || 'Unknown'}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{t('visit.chw')}</span>
-            <span>{visit.profiles.full_name}</span>
+          
+          {areaName && (
+            <div className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <MapPin className="size-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{t('settings.area')}</span>
+              </div>
+              <span className="text-sm font-medium text-foreground">{areaName}</span>
+            </div>
+          )}
+          
+          <div className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <User2 className="size-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">{t('visit.chw')}</span>
+            </div>
+            <span className="text-sm font-medium text-foreground">{visit.profiles.full_name}</span>
           </div>
         </CardContent>
       </Card>
