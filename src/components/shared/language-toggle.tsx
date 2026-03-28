@@ -28,7 +28,7 @@ export function LanguageToggle({ className, variant = 'default' }: LanguageToggl
   // Cards variant - used in settings page
   if (variant === 'cards') {
     return (
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         {LANGUAGES.map((language) => {
           const isSelected = locale === language.code;
           
@@ -37,31 +37,32 @@ export function LanguageToggle({ className, variant = 'default' }: LanguageToggl
               key={language.code}
               onClick={() => setLocale(language.code)}
               className={cn(
-                "flex flex-col items-center p-4 rounded-xl transition-all duration-200",
-                "border-2",
-                "focus:outline-none focus:ring-2 focus:ring-[var(--color-sage)]/30 focus:ring-offset-2",
+                "relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200",
+                "border",
+                "focus:outline-none focus:ring-2 focus:ring-[var(--color-sage)]/30 focus:ring-offset-1",
                 isSelected
-                  ? "bg-[var(--color-sage)] border-[var(--color-sage)] text-white shadow-md"
-                  : "bg-white border-border/40 text-foreground hover:border-[var(--color-sage)]/50"
+                  ? "bg-[var(--color-sage)] border-[var(--color-sage)] text-white shadow-sm"
+                  : "bg-white border-border/50 text-foreground hover:border-[var(--color-sage)]/40 hover:bg-muted/30"
               )}
             >
-              <span className="text-2xl mb-1">{language.flag}</span>
-              <span className={cn(
-                "text-sm font-semibold",
-                isSelected ? "text-white" : "text-foreground"
-              )}>
-                {language.nativeLabel}
-              </span>
-              <span className={cn(
-                "text-xs mt-0.5",
-                isSelected ? "text-white/80" : "text-muted-foreground"
-              )}>
-                {language.label}
-              </span>
+              <span className="text-base">{language.flag}</span>
+              <div className="flex-1 text-left">
+                <span className={cn(
+                  "block text-xs font-semibold leading-tight",
+                  isSelected ? "text-white" : "text-foreground"
+                )}>
+                  {language.nativeLabel}
+                </span>
+                <span className={cn(
+                  "block text-[10px] leading-tight mt-0.5",
+                  isSelected ? "text-white/70" : "text-muted-foreground"
+                )}>
+                  {language.label}
+                </span>
+              </div>
               {isSelected && (
-                <div className="mt-2 flex items-center gap-1 text-xs font-medium text-white/90">
-                  <Check className="size-3" />
-                  Active
+                <div className="absolute top-1.5 right-1.5">
+                  <Check className="size-3 text-white/80" />
                 </div>
               )}
             </button>
