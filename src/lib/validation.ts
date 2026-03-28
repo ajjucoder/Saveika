@@ -1,0 +1,90 @@
+// Zod validation schemas for Pahad API requests
+
+import { z } from 'zod';
+
+// Signal value schema (0-3)
+const signalValueSchema = z.union([
+  z.literal(0),
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+]);
+
+// Visit responses schema
+export const visitResponsesSchema = z.object({
+  sleep: signalValueSchema,
+  appetite: signalValueSchema,
+  withdrawal: signalValueSchema,
+  trauma: signalValueSchema,
+  activities: signalValueSchema,
+  hopelessness: signalValueSchema,
+  substance: signalValueSchema,
+  self_harm: signalValueSchema,
+});
+
+// Score request schema
+export const scoreRequestSchema = z.object({
+  household_id: z.string().uuid(),
+  responses: visitResponsesSchema,
+  notes: z.string().max(1000).optional(),
+});
+
+// Login request schema
+export const loginRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+// Household status update schema (for supervisor)
+export const householdStatusSchema = z.enum(['active', 'reviewed', 'referred']);
+
+// Household status update request schema
+export const householdStatusRequestSchema = z.object({
+  household_id: z.string().uuid(),
+  status: householdStatusSchema,
+});
+
+// Risk level schema
+export const riskLevelSchema = z.enum(['low', 'moderate', 'high', 'critical']);
+
+// UUID schema
+export const uuidSchema = z.string().uuid();
+
+// Pagination schema
+export const paginationSchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+});
+
+// Types inferred from schemas
+export type ScoreRequestInput = z.infer<typeof scoreRequestSchema>;
+export type LoginRequestInput = z.infer<typeof loginRequestSchema>;
+export type VisitResponsesInput = z.infer<typeof visitResponsesSchema>;
+export type PaginationInput = z.infer<typeof paginationSchema>;
+export type HouseholdStatusRequestInput = z.infer<typeof householdStatusRequestSchema>;
+
+// Validation helper
+export function validateOrThrow<T>(schema: z.ZodSchema<T>, data: unknown): T {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    // Zod v4 uses 'issues'
+    const issues = result.error.issues;
+    const errors = issues.map((issue) => ({
+      path: issue.path.map(String).join('.'),
+      message: issue.message,
+    }));
+    throw new ValidationError('Validation failed', errors);
+  }
+  return result.data;
+}
+
+// Custom validation error
+export class ValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly details: Array<{ path: string; message: string }>
+  ) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
