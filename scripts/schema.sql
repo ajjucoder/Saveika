@@ -171,10 +171,3 @@ CREATE POLICY "visits_select_supervisor" ON visits
   USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'supervisor'));
 
 -- No UPDATE or DELETE policies on visits for anyone (visits are immutable records)
-
--- ============================================================
--- HELPER FUNCTION: Get current user's role
--- ============================================================
-CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$
-  SELECT role FROM profiles WHERE id = auth.uid();
-$$ LANGUAGE sql SECURITY DEFINER STABLE;

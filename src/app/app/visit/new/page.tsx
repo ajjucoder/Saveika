@@ -4,32 +4,41 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { VisitForm } from '@/components/chw/visit-form';
 import { useLanguage } from '@/providers/language-provider';
+import { useAuth } from '@/providers/auth-provider';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Household } from '@/lib/types';
 
 export default function NewVisitPage() {
   const { t } = useLanguage();
+  const { profile, loading: authLoading } = useAuth();
   const [households, setHouseholds] = useState<Household[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait for auth context to load
+    if (authLoading) {
+      return;
+    }
+
+    // If auth is loaded but no profile, show error
+    if (!profile) {
+      setError('Not authenticated');
+      setLoading(false);
+      return;
+    }
+
+    // Capture profile.id for use in async function (type narrowing doesn't carry into closures)
+    const chwId = profile.id;
+
     async function fetchHouseholds() {
       const supabase = getSupabaseBrowserClient();
-      
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          setError('Not authenticated');
-          setLoading(false);
-          return;
-        }
 
+      try {
         const { data, error: fetchError } = await supabase
           .from('households')
           .select('*')
-          .eq('assigned_chw_id', user.id)
+          .eq('assigned_chw_id', chwId)
           .order('code', { ascending: true });
 
         if (fetchError) {
@@ -46,7 +55,7 @@ export default function NewVisitPage() {
     }
 
     fetchHouseholds();
-  }, []);
+  }, [authLoading, profile]);
 
   if (loading) {
     return (

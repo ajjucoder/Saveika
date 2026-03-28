@@ -4,6 +4,9 @@
 // Requires SUPABASE_SERVICE_ROLE_KEY env variable
 
 import { createClient } from '@supabase/supabase-js';
+import { RISK_THRESHOLDS } from '../src/lib/constants';
+import { getFallbackResult } from '../src/lib/scoring';
+import type { VisitResponses, RiskLevel } from '../src/lib/types';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,6 +40,12 @@ const AREAS = [
   { name: 'Ward 7, Kavrepalanchok', name_ne: 'वडा ७, काभ्रेपलाञ्चोक', center_lat: 27.55, center_lng: 85.55 },
 ];
 
+// Generate a score within the correct threshold range for a risk level
+function generateScoreForRiskLevel(riskLevel: RiskLevel): number {
+  const threshold = RISK_THRESHOLDS[riskLevel];
+  return Math.floor(Math.random() * (threshold.max - threshold.min + 1)) + threshold.min;
+}
+
 // Generate households with globally unique codes using sequential numbering
 // Each CHW gets a contiguous range of codes to ensure uniqueness
 function generateHouseholds(
@@ -48,11 +57,11 @@ function generateHouseholds(
 ) {
   const households = [];
 
-  const riskLevels = [
-    ...Array(riskDistribution.low).fill('low'),
-    ...Array(riskDistribution.moderate).fill('moderate'),
-    ...Array(riskDistribution.high).fill('high'),
-    ...Array(riskDistribution.critical).fill('critical'),
+  const riskLevels: RiskLevel[] = [
+    ...Array(riskDistribution.low).fill('low' as RiskLevel),
+    ...Array(riskDistribution.moderate).fill('moderate' as RiskLevel),
+    ...Array(riskDistribution.high).fill('high' as RiskLevel),
+    ...Array(riskDistribution.critical).fill('critical' as RiskLevel),
   ];
 
   const names = [
@@ -61,11 +70,9 @@ function generateHouseholds(
   ];
 
   for (let i = 0; i < count; i++) {
-    const riskLevel = riskLevels[i] || 'low';
-    const riskScore = riskLevel === 'low' ? Math.floor(Math.random() * 31) :
-                      riskLevel === 'moderate' ? 31 + Math.floor(Math.random() * 30) :
-                      riskLevel === 'high' ? 61 + Math.floor(Math.random() * 20) :
-                      81 + Math.floor(Math.random() * 20);
+    const riskLevel = riskLevels[i] || 'low' as RiskLevel;
+    // Use correct threshold-based score generation
+    const riskScore = generateScoreForRiskLevel(riskLevel);
 
     // Use a globally unique code with CHW prefix and sequential number
     const codeNumber = startIndex + i + 1;
@@ -84,44 +91,64 @@ function generateHouseholds(
 }
 
 // Generate sample visit responses based on risk level
-function generateVisitResponses(riskLevel: string): Record<string, number> {
-  const baseValues: Record<string, Record<string, number>> = {
-    low: {
-      sleep: 0, appetite: 0, activities: 0, hopelessness: 0,
-      withdrawal: 0, trauma: 0, fear_flashbacks: 0, psychosis_signs: 0,
-      substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 0,
-    },
-    moderate: {
-      sleep: 1, appetite: 1, activities: 1, hopelessness: 1,
-      withdrawal: 1, trauma: 0, fear_flashbacks: 0, psychosis_signs: 0,
-      substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 0,
-    },
-    high: {
-      sleep: 2, appetite: 2, activities: 2, hopelessness: 2,
-      withdrawal: 2, trauma: 1, fear_flashbacks: 1, psychosis_signs: 2,
-      substance: 1, substance_neglect: 1, self_harm: 0, wish_to_die: 0,
-    },
-    critical: {
-      sleep: 3, appetite: 3, activities: 3, hopelessness: 3,
-      withdrawal: 3, trauma: 2, fear_flashbacks: 2, psychosis_signs: 3,
-      substance: 2, substance_neglect: 2, self_harm: 2, wish_to_die: 1,
-    },
+// Returns responses that produce a score in the correct threshold range
+function generateVisitResponses(riskLevel: RiskLevel): VisitResponses {
+  // Get target score from correct threshold
+  const targetScore = generateScoreForRiskLevel(riskLevel);
+
+  // Start with base responses
+  const responses: VisitResponses = {
+    sleep: 0, appetite: 0, activities: 0, hopelessness: 0,
+    withdrawal: 0, trauma: 0, fear_flashbacks: 0, psychosis_signs: 0,
+    substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 0,
   };
 
-  const responses: Record<string, number> = { ...(baseValues[riskLevel] || baseValues.low) };
+  // Calculate target weighted sum from score
+  // score = round(weightedSum / 123 * 100) => weightedSum ≈ score * 123 / 100
+  const targetWeightedSum = Math.round((targetScore / 100) * 123);
 
-  // Add some randomness
-  const keys = Object.keys(responses);
-  for (const key of keys) {
-    responses[key] = Math.min(3, Math.max(0, responses[key] + (Math.random() > 0.5 ? 1 : 0)));
+  // Distribute weighted sum across signals
+  const signalWeights: Record<keyof VisitResponses, number> = {
+    sleep: 2, appetite: 2, activities: 3, hopelessness: 4,
+    withdrawal: 3, trauma: 3, fear_flashbacks: 3, psychosis_signs: 4,
+    substance: 3, substance_neglect: 3, self_harm: 5, wish_to_die: 6,
+  };
+
+  const sortedKeys = Object.keys(signalWeights).sort(
+    (a, b) => signalWeights[a as keyof VisitResponses] - signalWeights[b as keyof VisitResponses]
+  ) as Array<keyof VisitResponses>;
+
+  let remainingSum = targetWeightedSum;
+
+  for (const key of sortedKeys) {
+    if (remainingSum <= 0) break;
+
+    const weight = signalWeights[key];
+    const value = Math.min(3, Math.floor(remainingSum / weight));
+    responses[key] = value as 0 | 1 | 2 | 3;
+    remainingSum -= value * weight;
+  }
+
+  // For critical risk, sometimes use override signals
+  if (riskLevel === 'critical' && Math.random() < 0.3) {
+    if (Math.random() < 0.5) {
+      responses.self_harm = 1;
+    } else {
+      responses.wish_to_die = 1;
+    }
+  }
+
+  // For high risk, sometimes use psychosis override
+  if (riskLevel === 'high' && Math.random() < 0.2) {
+    responses.psychosis_signs = 3;
   }
 
   return responses;
 }
 
 // Generate explanations based on risk level
-function getExplanations(riskLevel: string) {
-  const explanations = {
+function getExplanations(riskLevel: RiskLevel) {
+  const explanations: Record<RiskLevel, { en: string; ne: string }> = {
     low: {
       en: 'No significant warning signs observed. Continue routine monitoring.',
       ne: 'कुनै महत्त्वपूर्ण चेतावनी संकेतहरू देखिएन। नियमित अनुगमन जारी राख्नुहोस्।',
@@ -140,7 +167,7 @@ function getExplanations(riskLevel: string) {
     },
   };
 
-  return explanations[riskLevel as keyof typeof explanations] || explanations.low;
+  return explanations[riskLevel];
 }
 
 async function seed() {
@@ -265,9 +292,9 @@ async function seed() {
     household_id: string;
     chw_id: string;
     visit_date: string;
-    responses: Record<string, number>;
+    responses: VisitResponses;
     total_score: number;
-    risk_level: string;
+    risk_level: RiskLevel;
     explanation_en: string;
     explanation_ne: string;
     notes: string | null;
@@ -277,21 +304,25 @@ async function seed() {
   for (const household of households) {
     // Create 1-2 visits per household
     const visitCount = Math.random() > 0.5 ? 2 : 1;
-    const riskLevel = household.latest_risk_level;
-    const explanations = getExplanations(riskLevel);
+    const riskLevel = household.latest_risk_level as RiskLevel;
 
     for (let i = 0; i < visitCount; i++) {
       const daysAgo = Math.floor(Math.random() * 30) + 1;
       const visitDate = new Date();
       visitDate.setDate(visitDate.getDate() - daysAgo);
 
+      // Generate responses and compute score from them
+      const responses = generateVisitResponses(riskLevel);
+      const scoringResult = getFallbackResult(responses);
+      const explanations = getExplanations(scoringResult.risk_level);
+
       visits.push({
         household_id: household.id,
         chw_id: household.assigned_chw_id,
         visit_date: visitDate.toISOString().split('T')[0],
-        responses: generateVisitResponses(riskLevel),
-        total_score: household.latest_risk_score,
-        risk_level: riskLevel,
+        responses,
+        total_score: scoringResult.score,  // Computed from responses
+        risk_level: scoringResult.risk_level,  // Computed from responses with overrides
         explanation_en: explanations.en,
         explanation_ne: explanations.ne,
         notes: Math.random() > 0.7 ? 'Follow-up recommended during next visit.' : null,

@@ -104,13 +104,41 @@ describe('Fallback Scoring', () => {
     expect(result.explanation_ne).toContain('मानक स्क्रिनिङ');
   });
 
-  it('should validate score consistency', () => {
+  it('should validate score consistency without responses', () => {
     expect(validateScoreConsistency(25, 'low')).toBe(true);
     expect(validateScoreConsistency(25, 'moderate')).toBe(false);
     expect(validateScoreConsistency(50, 'moderate')).toBe(true);
     expect(validateScoreConsistency(75, 'high')).toBe(true);
     expect(validateScoreConsistency(90, 'critical')).toBe(true);
     expect(validateScoreConsistency(90, 'low')).toBe(false);
+  });
+
+  it('should validate score consistency with responses for override rules', () => {
+    // Low score with self_harm override should validate as critical
+    const responsesWithSelfHarm: VisitResponses = {
+      sleep: 0, appetite: 0, activities: 0, hopelessness: 0,
+      withdrawal: 0, trauma: 0, fear_flashbacks: 0, psychosis_signs: 0,
+      substance: 0, substance_neglect: 0, self_harm: 1, wish_to_die: 0,
+    };
+    expect(validateScoreConsistency(5, 'critical', responsesWithSelfHarm)).toBe(true);
+    expect(validateScoreConsistency(5, 'low', responsesWithSelfHarm)).toBe(false);
+
+    // Low score with wish_to_die override should validate as critical
+    const responsesWithWishToDie: VisitResponses = {
+      sleep: 0, appetite: 0, activities: 0, hopelessness: 0,
+      withdrawal: 0, trauma: 0, fear_flashbacks: 0, psychosis_signs: 0,
+      substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 1,
+    };
+    expect(validateScoreConsistency(6, 'critical', responsesWithWishToDie)).toBe(true);
+
+    // Low score with severe psychosis should validate as high
+    const responsesWithPsychosis: VisitResponses = {
+      sleep: 0, appetite: 0, activities: 0, hopelessness: 0,
+      withdrawal: 0, trauma: 0, fear_flashbacks: 0, psychosis_signs: 3,
+      substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 0,
+    };
+    expect(validateScoreConsistency(10, 'high', responsesWithPsychosis)).toBe(true);
+    expect(validateScoreConsistency(10, 'low', responsesWithPsychosis)).toBe(false);
   });
 
   it('should correctly classify risk levels', () => {
@@ -219,5 +247,65 @@ describe('Gemini Timeout', () => {
     if (originalKey !== undefined) {
       process.env.GEMINI_API_KEY = originalKey;
     }
+  });
+});
+
+// ============================================================================
+// REGRESSION TESTS: Override-based risk level validation
+// ============================================================================
+
+describe('Regression: validateScoreConsistency with override-based risk levels', () => {
+  /**
+   * FIXED: validateScoreConsistency() now accepts an optional responses parameter
+   * to properly validate override rules (self_harm, wish_to_die, psychosis_signs).
+   */
+  it('should validate low score with self_harm override as valid critical result', () => {
+    // Low score range but self_harm forces critical via override
+    const responses: VisitResponses = {
+      sleep: 2, appetite: 1, activities: 2, hopelessness: 1,
+      withdrawal: 2, trauma: 1, fear_flashbacks: 1, psychosis_signs: 0,
+      substance: 1, substance_neglect: 0, self_harm: 1, wish_to_die: 0,
+    };
+
+    const result = getFallbackResult(responses);
+    expect(result.score).toBeGreaterThan(0);
+    expect(result.score).toBeLessThan(50); // Low/moderate score range
+    expect(result.risk_level).toBe('critical'); // Override forces critical
+
+    // Now validates correctly with responses provided
+    expect(validateScoreConsistency(result.score, result.risk_level, responses)).toBe(true);
+  });
+
+  it('should validate low score with wish_to_die override as valid critical result', () => {
+    // Even lower score (5) but wish_to_die=1 forces critical via override
+    // Weighted sum = 6, score = round(6/123*100) = 5
+    const responses: VisitResponses = {
+      sleep: 0, appetite: 0, activities: 0, hopelessness: 0,
+      withdrawal: 0, trauma: 0, fear_flashbacks: 0, psychosis_signs: 0,
+      substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 1,
+    };
+
+    const result = getFallbackResult(responses);
+    expect(result.score).toBe(5); // Very low score (6/123*100 rounded)
+    expect(result.risk_level).toBe('critical'); // Override forces critical
+
+    // Now validates correctly with responses provided
+    expect(validateScoreConsistency(result.score, result.risk_level, responses)).toBe(true);
+  });
+
+  it('should validate low/moderate score with severe psychosis_signs as valid high result', () => {
+    // Score is 10 (low) but psychosis_signs=3 forces high via override
+    const responses: VisitResponses = {
+      sleep: 0, appetite: 0, activities: 0, hopelessness: 0,
+      withdrawal: 0, trauma: 0, fear_flashbacks: 0, psychosis_signs: 3,
+      substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 0,
+    };
+
+    const result = getFallbackResult(responses);
+    expect(result.score).toBe(10); // Low score range (3*4=12/123*100=~10)
+    expect(result.risk_level).toBe('high'); // Override forces high
+
+    // Now validates correctly with responses provided
+    expect(validateScoreConsistency(result.score, result.risk_level, responses)).toBe(true);
   });
 });

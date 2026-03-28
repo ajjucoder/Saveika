@@ -33,6 +33,21 @@ function isSchemaMissingError(error: { code?: string; message?: string } | null)
     (error?.message?.includes('Could not find the table') ?? false);
 }
 
+async function getProfileByIdWithAdmin(userId: string): Promise<Profile | null> {
+  const admin = getSupabaseAdminClient();
+  const { data, error } = await admin
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data as Profile;
+}
+
 export async function ensureAdminProfile(
   user: AuthUserProfileSeed,
   existingProfile?: Profile | null
@@ -176,6 +191,19 @@ export async function signInWithEmail(
   }
 
   if (profileError || !profile) {
+    const adminProfile = await getProfileByIdWithAdmin(data.user.id);
+
+    if (adminProfile) {
+      return {
+        success: true,
+        user: {
+          id: data.user.id,
+          email: data.user.email!,
+        },
+        profile: adminProfile,
+      };
+    }
+
     // CRITICAL: Clear the session before returning error
     // Without this, a valid session exists but the user cannot proceed
     await supabase.auth.signOut();

@@ -5,6 +5,12 @@ const mockSignInWithPassword = vi.fn();
 const mockSignOut = vi.fn();
 const mockSingle = vi.fn();
 const mockAdminSingle = vi.fn();
+const mockAdminEq = vi.fn(() => ({
+  single: mockAdminSingle,
+}));
+const mockAdminSelect = vi.fn(() => ({
+  eq: mockAdminEq,
+}));
 const mockAdminUpdateEq = vi.fn(() => ({
   select: vi.fn(() => ({
     single: mockAdminSingle,
@@ -35,6 +41,7 @@ const mockSupabaseClient = {
 
 const mockAdminClient = {
   from: vi.fn(() => ({
+    select: mockAdminSelect,
     update: mockAdminUpdate,
     insert: mockAdminInsert,
   })),
@@ -125,6 +132,46 @@ describe('auth admin handling', () => {
     expect(mockAdminUpdateEq).toHaveBeenCalledWith('id', 'user-123');
     expect(result.success).toBe(true);
     expect(result.profile?.role).toBe('supervisor');
+  });
+
+  it('loads a regular user profile via the admin client when the server client cannot read it immediately after sign-in', async () => {
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'chw-123',
+          email: 'chw1@demo.com',
+          user_metadata: {
+            full_name: 'Ram Bahadur',
+          },
+        },
+      },
+      error: null,
+    });
+
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'No rows found' },
+    });
+
+    mockAdminSingle.mockResolvedValueOnce({
+      data: {
+        id: 'chw-123',
+        email: 'chw1@demo.com',
+        full_name: 'Ram Bahadur',
+        avatar_url: null,
+        role: 'chw',
+        area_id: 'area-1',
+        created_at: '2024-01-01T00:00:00Z',
+      },
+      error: null,
+    });
+
+    const result = await signInWithEmail('chw1@demo.com', 'demo1234');
+
+    expect(mockAdminEq).toHaveBeenCalledWith('id', 'chw-123');
+    expect(result.success).toBe(true);
+    expect(result.profile?.role).toBe('chw');
+    expect(result.user?.email).toBe('chw1@demo.com');
   });
 
   it('treats the configured admin email case-insensitively', () => {

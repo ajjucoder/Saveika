@@ -205,8 +205,22 @@ export async function calculateScore(responses: VisitResponses): Promise<Scoring
 
 /**
  * Validate that a score matches its risk level
+ *
+ * When responses are provided, this validates that the risk level is correct
+ * accounting for override rules (self_harm, wish_to_die, psychosis_signs).
+ * Without responses, it only validates the score-based risk level.
  */
-export function validateScoreConsistency(score: number, riskLevel: RiskLevel): boolean {
+export function validateScoreConsistency(
+  score: number,
+  riskLevel: RiskLevel,
+  responses?: VisitResponses
+): boolean {
+  if (responses) {
+    // Use override-aware validation when responses are provided
+    const expectedLevel = applyOverrideRules(score, responses);
+    return expectedLevel === riskLevel;
+  }
+  // Backward compatible: only check score-based risk level
   const expectedLevel = getRiskLevelFromScore(score);
   return expectedLevel === riskLevel;
 }
