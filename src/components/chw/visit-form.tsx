@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, User, Calendar, Users, Home } from 'lucide-react';
+import { Loader2, AlertCircle, User, Calendar, Users, Home, ClipboardList, CheckCircle2, FileText, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { DisclaimerBanner } from '@/components/shared/disclaimer-banner';
 import { RiskBadge } from '@/components/shared/risk-badge';
 import { useLanguage } from '@/providers/language-provider';
@@ -123,13 +124,16 @@ export function VisitForm({ households }: VisitFormProps) {
     setShowFallbackToast(false);
   };
 
+  // Get selected household details for mini summary
+  const selectedHouseholdDetails = households.find(hh => hh.id === selectedHousehold);
+
   // Show result after successful submission
   if (result) {
     return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         {showFallbackToast && (
           <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/20">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertCircle className="size-4 text-amber-600" />
             <AlertDescription className="text-amber-800 dark:text-amber-200">
               {t('visit.fallbackToast') || 'AI explanation unavailable. Score calculated using standard screening weights.'}
             </AlertDescription>
@@ -140,17 +144,17 @@ export function VisitForm({ households }: VisitFormProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">{t('visit.result') || 'Screening Result'}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t('visit.riskLevel') || 'Risk Level'}</span>
               <RiskBadge level={result.risk_level} score={result.score} showScore size="lg" />
             </div>
             
-            <div className="pt-2 border-t">
-              <p className="text-sm text-muted-foreground mb-2">
-                {locale === 'ne' ? result.explanation_ne : result.explanation_en}
-              </p>
-            </div>
+            <Separator />
+
+            <p className="text-sm text-muted-foreground">
+              {locale === 'ne' ? result.explanation_ne : result.explanation_en}
+            </p>
           </CardContent>
         </Card>
 
@@ -182,61 +186,89 @@ export function VisitForm({ households }: VisitFormProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <DisclaimerBanner variant="compact" className="text-center mb-4" />
+    <div className="flex flex-col gap-6">
+      <DisclaimerBanner variant="compact" className="text-center" />
 
-      {/* Patient Information */}
-      <Card className="bg-muted/30 border-muted">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" />
+      {/* Patient Information Section */}
+      <Card className="bg-gradient-to-br from-[var(--color-ivory)]/50 to-[var(--color-sage-light)]/10 border-t-4 border-t-[var(--color-sage)]">
+        <CardHeader className="pb-2 pt-3">
+          <CardTitle className="text-base flex items-center gap-2 text-[var(--color-sage-dark)]">
+            <User className="size-4" />
             Patient Information
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="patientName" className="text-sm">
-                Full Name
-              </Label>
-              <Input
-                id="patientName"
-                value={patientName}
-                onChange={(e) => setPatientName(e.target.value)}
-                placeholder="Enter patient name"
-              />
+        <CardContent className="pt-0">
+          <div className="flex flex-col gap-4">
+            {/* Name Field - Full width on mobile, then row layout */}
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <div className="flex-1 flex flex-col gap-1.5">
+                <Label htmlFor="patientName" className="text-sm text-muted-foreground flex items-center gap-1">
+                  <User className="size-3" />
+                  Full Name
+                </Label>
+                <Input
+                  id="patientName"
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                  placeholder="Enter patient name"
+                  className="bg-background/80"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="patientAge" className="text-sm flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                Age
-              </Label>
-              <Input
-                id="patientAge"
-                type="number"
-                min="0"
-                max="150"
-                value={patientAge}
-                onChange={(e) => setPatientAge(e.target.value)}
-                placeholder="Years"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="patientGender" className="text-sm flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                Gender
-              </Label>
-              <Select value={patientGender} onValueChange={setPatientGender}>
-                <SelectTrigger id="patientGender">
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Male">Male</SelectItem>
-                  <SelectItem value="Female">Female</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                  <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
-                </SelectContent>
-              </Select>
+            
+            {/* Age and Gender in a row */}
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <div className="flex flex-col gap-1.5 sm:w-28">
+                <Label htmlFor="patientAge" className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Calendar className="size-3" />
+                  Age
+                </Label>
+                <Input
+                  id="patientAge"
+                  type="number"
+                  min="0"
+                  max="150"
+                  value={patientAge}
+                  onChange={(e) => setPatientAge(e.target.value)}
+                  placeholder="Years"
+                  className="bg-background/80"
+                />
+              </div>
+              
+              <div className="flex-1 flex flex-col gap-1.5">
+                <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Users className="size-3" />
+                  Gender
+                </Label>
+                <RadioGroup
+                  value={patientGender}
+                  onValueChange={setPatientGender}
+                  className="grid grid-cols-3 gap-2"
+                >
+                  {['Male', 'Female', 'Other'].map((gender) => (
+                    <div key={gender}>
+                      <RadioGroupItem
+                        value={gender}
+                        id={`gender-${gender}`}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={`gender-${gender}`}
+                        className={cn(
+                          'flex items-center justify-center text-center',
+                          'rounded-full border px-3 py-2 cursor-pointer',
+                          'text-xs font-medium transition-all',
+                          'hover:bg-accent hover:text-accent-foreground',
+                          'peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2',
+                          patientGender === gender && 'bg-primary text-primary-foreground border-primary'
+                        )}
+                      >
+                        {gender}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -244,13 +276,13 @@ export function VisitForm({ households }: VisitFormProps) {
 
       {/* Household Selection */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2 pt-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Home className="h-4 w-4 text-primary" />
+            <Home className="size-4 text-primary" />
             {t('visit.selectHousehold') || 'Select Household'}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0 flex flex-col gap-3">
           <Select value={selectedHousehold} onValueChange={setSelectedHousehold}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder={t('visit.chooseHousehold') || 'Choose a household...'} />
@@ -267,7 +299,7 @@ export function VisitForm({ households }: VisitFormProps) {
                         <span className="font-medium">{hh.head_name}</span>
                       </div>
                       {areaDisplay && (
-                        <span className="text-xs text-muted-foreground pl-0">
+                        <span className="text-xs text-muted-foreground">
                           {areaDisplay}
                         </span>
                       )}
@@ -277,50 +309,96 @@ export function VisitForm({ households }: VisitFormProps) {
               })}
             </SelectContent>
           </Select>
+
+          {/* Mini summary card when household is selected */}
+          {selectedHouseholdDetails && (
+            <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-[var(--color-sage)]/30 bg-[var(--color-sage-light)]/10">
+              <div className="flex-shrink-0 size-8 rounded-full bg-[var(--color-sage)]/20 flex items-center justify-center">
+                <Home className="size-4 text-[var(--color-sage-dark)]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-[var(--color-sage-dark)]">
+                    {selectedHouseholdDetails.code}
+                  </span>
+                  <ChevronRight className="size-3 text-muted-foreground" />
+                  <span className="font-medium truncate">
+                    {selectedHouseholdDetails.head_name}
+                  </span>
+                </div>
+                {selectedHouseholdDetails.area_name && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {locale === 'ne' ? selectedHouseholdDetails.area_name_ne : selectedHouseholdDetails.area_name}
+                  </p>
+                )}
+              </div>
+              <CheckCircle2 className="size-5 text-[var(--color-sage)]" />
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Card className="sticky top-4 z-10 border-primary/20 bg-gradient-to-r from-background to-muted/30 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between gap-4">
+      {/* Progress Card - Sticky and Compact */}
+      <Card className="sticky top-4 z-10 border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
+        <CardContent className="px-4 py-3">
+          <div className="flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-sm font-semibold mb-1">{t('visit.progressTitle') || 'Screening Progress'}</p>
-              <p className="text-xs text-muted-foreground">
-                {answeredCount} of {SIGNAL_KEYS.length} questions answered
-              </p>
+              <Progress 
+                value={progressValue} 
+                className="h-1.5 bg-muted"
+              />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              {progressValue === 100 ? (
+                <CheckCircle2 className="size-4 text-green-600" />
+              ) : (
+                <ClipboardList className="size-4 text-muted-foreground" />
+              )}
               <span className={cn(
-                "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
-                progressValue === 100 
-                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
-                  : "bg-primary/10 text-primary"
+                "font-medium tabular-nums",
+                progressValue === 100 ? "text-green-600" : "text-muted-foreground"
               )}>
-                {Math.round(progressValue)}%
+                {answeredCount}/{SIGNAL_KEYS.length}
               </span>
             </div>
           </div>
-          <Progress value={progressValue} className="h-2 mt-3" />
         </CardContent>
       </Card>
 
-      {/* Screening Signals */}
-      <div className="space-y-4">
-        {SCREENING_SIGNALS.map((signal, index) => {
-          const currentValue = responses[signal.key as keyof VisitResponses];
-          const signalLabel = locale === 'ne' ? signal.question_ne : signal.label_en;
+      {/* Screening Questions - ALL in ONE Card */}
+      <Card>
+        <CardHeader className="pb-2 pt-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ClipboardList className="size-4 text-primary" />
+            {t('visit.screeningQuestions') || 'Screening Questions'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 flex flex-col">
+          {SCREENING_SIGNALS.map((signal, index) => {
+            const currentValue = responses[signal.key as keyof VisitResponses];
+            const signalLabel = locale === 'ne' ? signal.question_ne : signal.label_en;
+            const isLast = index === SCREENING_SIGNALS.length - 1;
 
-          return (
-            <Card key={signal.key}>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+            return (
+              <div key={signal.key}>
+                <div className="flex items-start gap-3 py-3">
+                  {/* Question Number Badge */}
+                  <span className={cn(
+                    "flex-shrink-0 size-6 rounded-full flex items-center justify-center text-xs font-semibold",
+                    currentValue !== undefined 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted text-muted-foreground"
+                  )}>
                     {index + 1}
                   </span>
-                  <div className="flex-1">
-                    <Label className="text-sm font-medium mb-3 block">
+
+                  {/* Question Content */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-3">
+                    <Label className="text-sm leading-relaxed">
                       {signalLabel}
                     </Label>
+                    
+                    {/* Response Options - Pill buttons */}
                     <RadioGroup
                       value={currentValue === undefined ? '' : String(currentValue)}
                       onValueChange={(val) => 
@@ -343,11 +421,13 @@ export function VisitForm({ households }: VisitFormProps) {
                               htmlFor={`${signal.key}-${option.value}`}
                               className={cn(
                                 'flex items-center justify-center text-center',
-                                'rounded-lg border p-2 cursor-pointer',
-                                'text-xs transition-all',
+                                'rounded-full border px-3 py-1.5 cursor-pointer',
+                                'text-xs font-medium transition-all',
                                 'hover:bg-accent hover:text-accent-foreground',
                                 'peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2',
-                                isSelected && 'bg-primary text-primary-foreground border-primary'
+                                isSelected && 'bg-primary text-primary-foreground border-primary',
+                                isSelected && option.value === 3 && 'bg-destructive text-destructive-foreground border-destructive',
+                                isSelected && option.value === 0 && 'bg-[var(--color-sage)]/80 text-white border-[var(--color-sage)]'
                               )}
                             >
                               {optionLabel}
@@ -358,23 +438,30 @@ export function VisitForm({ households }: VisitFormProps) {
                     </RadioGroup>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
-      {/* Notes */}
+                {/* Separator between questions */}
+                {!isLast && <Separator className="my-0" />}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* Notes Section */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t('visit.notes') || 'Notes (Optional)'}</CardTitle>
+        <CardHeader className="pb-2 pt-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="size-4 text-muted-foreground" />
+            {t('visit.notes') || 'Notes (Optional)'}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={t('visit.notesPlaceholder') || 'Add any additional observations...'}
             rows={3}
+            className="resize-none"
           />
         </CardContent>
       </Card>
@@ -382,7 +469,7 @@ export function VisitForm({ households }: VisitFormProps) {
       {/* Error Message */}
       {error && (
         <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -390,13 +477,13 @@ export function VisitForm({ households }: VisitFormProps) {
       {/* Submit Button */}
       <Button
         size="lg"
-        className="w-full"
+        className="w-full bg-primary hover:bg-primary/90"
         onClick={handleSubmit}
         disabled={isSubmitting || !selectedHousehold || !allSignalsAnswered}
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 size-4 animate-spin" />
             {t('common.syncing') || 'Syncing...'}
           </>
         ) : (
