@@ -6,6 +6,26 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Normalize Supabase relation result that may be an object or array.
+ * Supabase one-to-one relations can return either:
+ * - An object directly: { name: "Area 1" }
+ * - An array with one element: [{ name: "Area 1" }]
+ * - null if no relation exists
+ *
+ * This helper safely extracts the first element if it's an array,
+ * or returns the object directly if it's already an object.
+ */
+export function normalizeRelation<T>(
+  relation: T | T[] | null | undefined
+): T | null {
+  if (!relation) return null;
+  if (Array.isArray(relation)) {
+    return relation.length > 0 ? relation[0] : null;
+  }
+  return relation;
+}
+
+/**
  * Format a date string to a readable format
  */
 export function formatDate(dateStr: string | Date, locale: string = 'en'): string {

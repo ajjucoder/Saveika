@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { normalizeRelation } from '@/lib/utils';
 import { WorkersClient, type WorkerData } from '@/components/supervisor/workers-client';
 import { WorkersHeader } from '@/components/supervisor/workers-header';
 
@@ -59,8 +60,9 @@ export default async function WorkersPage() {
         visitCount: 0,
         lastActive: null,
       };
-      const areaArray = chw.areas as { name: string; name_ne: string }[] | null;
-      const area = areaArray?.[0];
+      const area = normalizeRelation(
+        chw.areas as { name: string; name_ne: string } | { name: string; name_ne: string }[] | null
+      );
 
       return {
         id: chw.id,

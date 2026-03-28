@@ -41,6 +41,9 @@ export interface Household {
   latest_risk_level: RiskLevel;
   status: HouseholdStatus;
   created_at: string;
+  // Optional area name fields for display (populated by API joins)
+  area_name?: string;
+  area_name_ne?: string;
 }
 
 // Visit responses - all 12 screening signals

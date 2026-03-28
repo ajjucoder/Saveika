@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { FLAGGED_RISK_LEVELS, getRiskLevelFromScore } from '@/lib/constants';
+import { normalizeRelation } from '@/lib/utils';
 import type { RiskLevel } from '@/lib/types';
 import { SummaryCards } from '@/components/supervisor/summary-cards';
 import { FlaggedTable, type FlaggedHousehold } from '@/components/supervisor/flagged-table';
@@ -111,10 +112,12 @@ export default async function SupervisorDashboard() {
     });
 
     for (const household of flaggedHouseholdsResult.data) {
-      const areaArray = household.areas as { name: string; name_ne: string }[] | null;
-      const profileArray = household.profiles as { full_name: string }[] | null;
-      const area = areaArray?.[0];
-      const profile = profileArray?.[0];
+      const area = normalizeRelation(
+        household.areas as { name: string; name_ne: string } | { name: string; name_ne: string }[] | null
+      );
+      const profile = normalizeRelation(
+        household.profiles as { full_name: string } | { full_name: string }[] | null
+      );
 
       flaggedData.push({
         id: household.id,

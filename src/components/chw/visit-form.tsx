@@ -180,11 +180,21 @@ export function VisitForm({ households }: VisitFormProps) {
               <SelectValue placeholder={t('visit.chooseHousehold') || 'Choose a household...'} />
             </SelectTrigger>
             <SelectContent>
-              {households.map((hh) => (
-                <SelectItem key={hh.id} value={hh.id}>
-                  {hh.code}
-                </SelectItem>
-              ))}
+              {households.map((hh) => {
+                const areaDisplay = hh.area_name ? (locale === 'ne' ? hh.area_name_ne : hh.area_name) : null;
+                return (
+                  <SelectItem key={hh.id} value={hh.id}>
+                    <span className="flex items-center gap-2">
+                      <span className="font-medium">{hh.code}</span>
+                      {areaDisplay && (
+                        <span className="text-muted-foreground text-xs">
+                          · {areaDisplay}
+                        </span>
+                      )}
+                    </span>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </CardContent>

@@ -39,6 +39,8 @@ const testHouseholds: Household[] = [
     latest_risk_level: 'low',
     status: 'active',
     created_at: '2024-01-01T00:00:00Z',
+    area_name: 'Kathmandu',
+    area_name_ne: 'काठमाडौं',
   },
 ];
 
@@ -75,8 +77,8 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     const householdSelect = screen.getByRole('combobox', { name: '' });
     await user.click(householdSelect);
     
-    // Wait for dropdown and click the option
-    const option = await screen.findByRole('option', { name: 'HH-001' });
+    // Wait for dropdown and click the option (now includes area context)
+    const option = await screen.findByRole('option', { name: /HH-001/ });
     await user.click(option);
 
     // Find submit button
@@ -93,7 +95,7 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     // Select a household
     const householdSelect = screen.getByRole('combobox', { name: '' });
     await user.click(householdSelect);
-    const option = await screen.findByRole('option', { name: 'HH-001' });
+    const option = await screen.findByRole('option', { name: /HH-001/ });
     await user.click(option);
 
     expect(screen.getByText('0 / 12 answered')).toBeInTheDocument();
@@ -112,7 +114,7 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     // Select a household
     const householdSelect = screen.getByRole('combobox', { name: '' });
     await user.click(householdSelect);
-    const option = await screen.findByRole('option', { name: 'HH-001' });
+    const option = await screen.findByRole('option', { name: /HH-001/ });
     await user.click(option);
 
     // Answer only the first signal (sleep) by clicking on the first "Mild / sometimes" radio
@@ -132,7 +134,7 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     // Select a household
     const householdSelect = screen.getByRole('combobox', { name: '' });
     await user.click(householdSelect);
-    const option = await screen.findByRole('option', { name: 'HH-001' });
+    const option = await screen.findByRole('option', { name: /HH-001/ });
     await user.click(option);
 
     // Answer all 12 signals - click "Not observed" for each
@@ -161,7 +163,7 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     // Select a household
     const householdSelect = screen.getByRole('combobox', { name: '' });
     await user.click(householdSelect);
-    const option = await screen.findByRole('option', { name: 'HH-001' });
+    const option = await screen.findByRole('option', { name: /HH-001/ });
     await user.click(option);
 
     // Answer all 12 signals as "Not observed"

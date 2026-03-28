@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { normalizeRelation } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import type { RiskLevel, HouseholdStatus, Visit } from '@/lib/types';
 import { HouseholdDetailClient } from './client-page';
@@ -55,8 +56,12 @@ export default async function HouseholdDetailPage({ params }: PageProps) {
     .order('visit_date', { ascending: false });
 
   // Serialize data for client component
-  const areaData = household.areas as { id: string; name: string; name_ne: string }[] | null;
-  const chwData = household.profiles as { id: string; full_name: string; email: string }[] | null;
+  const area = normalizeRelation(
+    household.areas as { id: string; name: string; name_ne: string } | { id: string; name: string; name_ne: string }[] | null
+  );
+  const chw = normalizeRelation(
+    household.profiles as { id: string; full_name: string; email: string } | { id: string; full_name: string; email: string }[] | null
+  );
 
   const householdData = {
     id: household.id,
@@ -65,10 +70,12 @@ export default async function HouseholdDetailPage({ params }: PageProps) {
     latest_risk_score: household.latest_risk_score,
     latest_risk_level: household.latest_risk_level as RiskLevel,
     status: household.status as HouseholdStatus,
-    area: areaData?.[0] || null,
-    chw: chwData?.[0] || null,
+    area: area || null,
+    chw: chw || null,
     visits: (visits || []).map((v) => {
-      const visitProfile = v.profiles as { full_name: string }[] | null;
+      const visitProfile = normalizeRelation(
+        v.profiles as { full_name: string } | { full_name: string }[] | null
+      );
       return {
         id: v.id,
         household_id: v.household_id,
@@ -81,7 +88,7 @@ export default async function HouseholdDetailPage({ params }: PageProps) {
         explanation_ne: v.explanation_ne,
         notes: v.notes,
         created_at: v.created_at,
-        chw_name: visitProfile?.[0]?.full_name || 'Unknown',
+        chw_name: visitProfile?.full_name || 'Unknown',
       };
     }),
   };

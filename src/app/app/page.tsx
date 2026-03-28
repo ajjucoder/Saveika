@@ -2,20 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, CalendarCheck, Home, RefreshCw, Plus } from 'lucide-react';
+import { Loader2, CalendarCheck, Home, RefreshCw, Plus, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatCard } from '@/components/chw/stat-card';
 import { useAuth } from '@/providers/auth-provider';
 import { useLanguage } from '@/providers/language-provider';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import type { Area } from '@/lib/types';
 
 export default function CHWHomePage() {
   const { profile } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [visitsThisMonth, setVisitsThisMonth] = useState<number>(0);
   const [assignedHouseholds, setAssignedHouseholds] = useState<number>(0);
   const [pendingSyncs, setPendingSyncs] = useState<number>(0);
+  const [area, setArea] = useState<Area | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,6 +50,19 @@ export default function CHWHomePage() {
 
         // Pending syncs is simulated (0 for now since we save immediately)
         setPendingSyncs(0);
+
+        // Fetch area if profile has area_id
+        if (profile.area_id) {
+          const { data: areaData } = await supabase
+            .from('areas')
+            .select('*')
+            .eq('id', profile.area_id)
+            .single();
+
+          if (areaData) {
+            setArea(areaData as Area);
+          }
+        }
       } catch (error) {
         console.error('Error fetching CHW data:', error);
       } finally {
@@ -56,7 +71,7 @@ export default function CHWHomePage() {
     }
 
     fetchData();
-  }, [profile?.id]);
+  }, [profile?.id, profile?.area_id]);
 
   if (loading) {
     return (
@@ -68,6 +83,7 @@ export default function CHWHomePage() {
 
   const hasData = visitsThisMonth > 0 || assignedHouseholds > 0;
   const greeting = profile?.full_name?.split(' ')[0] || t('home.greeting');
+  const areaName = area ? (locale === 'ne' ? area.name_ne : area.name) : null;
 
   return (
     <div className="space-y-6">
@@ -76,9 +92,20 @@ export default function CHWHomePage() {
         <h1 className="text-2xl font-bold">
           {t('home.greeting')}, {greeting}!
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {t('user.chw')}
-        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-muted-foreground text-sm">
+            {t('user.chw')}
+          </p>
+          {areaName && (
+            <>
+              <span className="text-muted-foreground/50">·</span>
+              <p className="text-muted-foreground text-sm flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {areaName}
+              </p>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Empty State */}

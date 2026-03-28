@@ -35,6 +35,7 @@ describe('GET /api/households', () => {
         };
       }
 
+      // For households table with areas join
       return {
         select: mockAdminSelect.mockReturnValue({
           eq: mockAdminEq.mockReturnValue({
@@ -73,14 +74,29 @@ describe('GET /api/households', () => {
     expect(data.error).toBe('Only CHWs can access households');
   });
 
-  it('returns households assigned to the authenticated CHW', async () => {
+  it('returns households assigned to the authenticated CHW with area names', async () => {
     mockGetAuthenticatedUser.mockResolvedValue({ id: 'chw-123' });
     mockAdminSingle.mockResolvedValue({
       data: { role: 'chw' },
       error: null,
     });
     mockAdminOrder.mockResolvedValue({
-      data: [{ id: 'household-1', code: 'HH-001', assigned_chw_id: 'chw-123' }],
+      data: [
+        {
+          id: 'household-1',
+          code: 'HH-001',
+          assigned_chw_id: 'chw-123',
+          area_id: 'area-1',
+          areas: { name: 'Kathmandu', name_ne: 'काठमाडौं' },
+        },
+        {
+          id: 'household-2',
+          code: 'HH-002',
+          assigned_chw_id: 'chw-123',
+          area_id: 'area-1',
+          areas: { name: 'Kathmandu', name_ne: 'काठमाडौं' },
+        },
+      ],
       error: null,
     });
 
@@ -89,11 +105,52 @@ describe('GET /api/households', () => {
 
     expect(response.status).toBe(200);
     expect(data.households).toEqual([
-      expect.objectContaining({ code: 'HH-001', assigned_chw_id: 'chw-123' }),
+      expect.objectContaining({
+        code: 'HH-001',
+        assigned_chw_id: 'chw-123',
+        area_name: 'Kathmandu',
+        area_name_ne: 'काठमाडौं',
+      }),
+      expect.objectContaining({
+        code: 'HH-002',
+        assigned_chw_id: 'chw-123',
+        area_name: 'Kathmandu',
+        area_name_ne: 'काठमाडौं',
+      }),
     ]);
     expect(mockAdminFrom).toHaveBeenCalledWith('profiles');
     expect(mockAdminFrom).toHaveBeenCalledWith('households');
     expect(mockAdminEq).toHaveBeenCalledWith('assigned_chw_id', 'chw-123');
     expect(mockAdminOrder).toHaveBeenCalledWith('code', { ascending: true });
+  });
+
+  it('handles households without area data gracefully', async () => {
+    mockGetAuthenticatedUser.mockResolvedValue({ id: 'chw-123' });
+    mockAdminSingle.mockResolvedValue({
+      data: { role: 'chw' },
+      error: null,
+    });
+    mockAdminOrder.mockResolvedValue({
+      data: [
+        {
+          id: 'household-1',
+          code: 'HH-001',
+          assigned_chw_id: 'chw-123',
+          area_id: 'area-1',
+          areas: null,
+        },
+      ],
+      error: null,
+    });
+
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.households).toHaveLength(1);
+    expect(data.households[0].code).toBe('HH-001');
+    // Area name fields should not be present when areas is null (undefined is stripped from JSON)
+    expect(data.households[0].area_name).toBeUndefined();
+    expect(data.households[0].area_name_ne).toBeUndefined();
   });
 });

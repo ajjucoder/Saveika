@@ -25,6 +25,8 @@ const households: Household[] = [
     latest_risk_level: 'low',
     status: 'active',
     created_at: '2024-01-01T00:00:00Z',
+    area_name: 'Kathmandu',
+    area_name_ne: 'काठमाडौं',
   },
   {
     id: '123e4567-e89b-12d3-a456-426614174001',
@@ -36,6 +38,8 @@ const households: Household[] = [
     latest_risk_level: 'moderate',
     status: 'active',
     created_at: '2024-01-02T00:00:00Z',
+    area_name: 'Kathmandu',
+    area_name_ne: 'काठमाडौं',
   },
 ];
 
