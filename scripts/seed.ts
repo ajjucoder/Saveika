@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { RISK_THRESHOLDS } from '../src/lib/constants';
 import { getFallbackResult } from '../src/lib/scoring';
+import { DEMO_AREAS, buildDemoHouseholds, filterMissingHouseholds, mergeDemoUserIds } from '../src/lib/seed-data';
 import type { VisitResponses, RiskLevel } from '../src/lib/types';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -33,61 +34,10 @@ const DEMO_USERS = [
   { email: 'supervisor@demo.com', password: 'demo1234', full_name: 'Dr. Sharma', role: 'supervisor' as const, area_name: null },
 ];
 
-// Area definitions with real Nepal coordinates
-const AREAS = [
-  { name: 'Ward 3, Sindhupalchok', name_ne: 'वडा ३, सिन्धुपाल्चोक', center_lat: 27.75, center_lng: 85.85 },
-  { name: 'Ward 5, Sindhupalchok', name_ne: 'वडा ५, सिन्धुपाल्चोक', center_lat: 27.78, center_lng: 85.88 },
-  { name: 'Ward 7, Kavrepalanchok', name_ne: 'वडा ७, काभ्रेपलाञ्चोक', center_lat: 27.55, center_lng: 85.55 },
-];
-
 // Generate a score within the correct threshold range for a risk level
 function generateScoreForRiskLevel(riskLevel: RiskLevel): number {
   const threshold = RISK_THRESHOLDS[riskLevel];
   return Math.floor(Math.random() * (threshold.max - threshold.min + 1)) + threshold.min;
-}
-
-// Generate households with globally unique codes using sequential numbering
-// Each CHW gets a contiguous range of codes to ensure uniqueness
-function generateHouseholds(
-  areaId: string,
-  chwId: string,
-  startIndex: number, // Starting index to ensure no overlap across CHWs
-  count: number,
-  riskDistribution: { low: number; moderate: number; high: number; critical: number }
-) {
-  const households = [];
-
-  const riskLevels: RiskLevel[] = [
-    ...Array(riskDistribution.low).fill('low' as RiskLevel),
-    ...Array(riskDistribution.moderate).fill('moderate' as RiskLevel),
-    ...Array(riskDistribution.high).fill('high' as RiskLevel),
-    ...Array(riskDistribution.critical).fill('critical' as RiskLevel),
-  ];
-
-  const names = [
-    'Thapa', 'Gurung', 'Tamang', 'Sherpa', 'Rai', 'Limbu', 'Magar', 'Newar',
-    'Khadka', 'Shrestha', 'Acharya', 'Poudel', 'Regmi', 'Aryal', 'Basnet'
-  ];
-
-  for (let i = 0; i < count; i++) {
-    const riskLevel = riskLevels[i] || 'low' as RiskLevel;
-    // Use correct threshold-based score generation
-    const riskScore = generateScoreForRiskLevel(riskLevel);
-
-    // Use a globally unique code with CHW prefix and sequential number
-    const codeNumber = startIndex + i + 1;
-    households.push({
-      code: `HH-${String(codeNumber).padStart(3, '0')}`,
-      head_name: `${names[i % names.length]} Family`,
-      area_id: areaId,
-      assigned_chw_id: chwId,
-      latest_risk_score: riskScore,
-      latest_risk_level: riskLevel,
-      status: riskLevel === 'critical' ? 'active' : riskLevel === 'high' ? 'active' : 'active',
-    });
-  }
-
-  return households;
 }
 
 // Generate sample visit responses based on risk level
@@ -174,27 +124,72 @@ async function seed() {
   console.log('🌱 Starting Pahad database seed...\n');
 
   // 1. Create areas
-  console.log('📍 Creating areas...');
-  const { data: areas, error: areasError } = await supabase
+  console.log('📍 Ensuring areas...');
+  const areaNames = DEMO_AREAS.map((area) => area.name);
+  const { data: existingAreas, error: existingAreasError } = await supabase
     .from('areas')
-    .insert(AREAS)
-    .select();
+    .select('id, name')
+    .in('name', areaNames);
 
-  if (areasError) {
-    console.error('Failed to create areas:', areasError);
+  if (existingAreasError) {
+    console.error('Failed to load existing areas:', existingAreasError);
     process.exit(1);
   }
-  console.log(`   Created ${areas.length} areas\n`);
 
-  const areaMap = new Map(areas.map(a => [a.name, a.id]));
+  const existingAreaNames = new Set((existingAreas ?? []).map((area) => area.name));
+  const missingAreas = DEMO_AREAS.filter((area) => !existingAreaNames.has(area.name));
+
+  let insertedAreas: Array<{ id: string; name: string }> = [];
+  if (missingAreas.length > 0) {
+    const { data, error } = await supabase
+      .from('areas')
+      .insert(missingAreas)
+      .select('id, name');
+
+    if (error) {
+      console.error('Failed to create missing areas:', error);
+      process.exit(1);
+    }
+
+    insertedAreas = data ?? [];
+  }
+
+  const areaMap = new Map(
+    [...(existingAreas ?? []), ...insertedAreas].map((area) => [area.name, area.id])
+  );
+  console.log(`   Created ${insertedAreas.length} missing areas (${areaMap.size} total demo areas available)\n`);
 
   // 2. Create users via Supabase Auth Admin API
-  console.log('👤 Creating demo users...');
-  const userIds: Record<string, string> = {};
+  console.log('👤 Ensuring demo users...');
+  const demoEmails = DEMO_USERS.map((user) => user.email);
+  const { data: existingProfiles, error: existingProfilesError } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .in('email', demoEmails);
+
+  if (existingProfilesError) {
+    console.error('Failed to load existing demo profiles:', existingProfilesError);
+    process.exit(1);
+  }
+
+  const existingProfileIds = Object.fromEntries(
+    (existingProfiles ?? []).map((profile) => [profile.email, profile.id])
+  );
+  const authUserIds: Record<string, string> = {};
 
   for (const user of DEMO_USERS) {
+    if (existingProfileIds[user.email]) {
+      console.log(`   Profile ${user.email} already exists, reusing...`);
+      continue;
+    }
+
     // Check if user already exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const { data: existingUsers, error: listUsersError } = await supabase.auth.admin.listUsers();
+    if (listUsersError) {
+      console.warn(`   Could not query auth admin for ${user.email}: ${listUsersError.message}`);
+      continue;
+    }
+
     const existing = existingUsers.users.find(u => u.email === user.email);
 
     let authUserId: string;
@@ -217,7 +212,7 @@ async function seed() {
       console.log(`   Created ${user.email} (${user.role})`);
     }
 
-    userIds[user.email] = authUserId;
+    authUserIds[user.email] = authUserId;
 
     // Create or update profile
     const areaId = user.area_name ? areaMap.get(user.area_name) : null;
@@ -236,58 +231,58 @@ async function seed() {
       console.error(`   Failed to create profile for ${user.email}:`, profileError);
     }
   }
+  const userIds = mergeDemoUserIds(existingProfileIds, authUserIds);
   console.log('');
 
   // 3. Create households
-  console.log('🏠 Creating households...');
-  interface HouseholdInsert {
-    code: string;
-    head_name: string;
-    area_id: string;
-    assigned_chw_id: string;
-    latest_risk_score: number;
-    latest_risk_level: string;
-    status: string;
-  }
-  const allHouseholds: HouseholdInsert[] = [];
+  console.log('🏠 Ensuring households...');
+  const demoHouseholds = buildDemoHouseholds(
+    Object.fromEntries(areaMap.entries()),
+    userIds
+  );
 
-  // CHW1 gets 5 households in Ward 3 (1 low, 2 moderate, 1 high, 1 critical)
-  // Codes: HH-001 to HH-005
-  const chw1Id = userIds['chw1@demo.com'];
-  if (chw1Id) {
-    const area1Id = areaMap.get('Ward 3, Sindhupalchok')!;
-    allHouseholds.push(...generateHouseholds(area1Id, chw1Id, 0, 5, { low: 1, moderate: 2, high: 1, critical: 1 }));
-  }
-
-  // CHW2 gets 5 households in Ward 5 (3 low, 1 moderate, 1 high)
-  // Codes: HH-006 to HH-010
-  const chw2Id = userIds['chw2@demo.com'];
-  if (chw2Id) {
-    const area2Id = areaMap.get('Ward 5, Sindhupalchok')!;
-    allHouseholds.push(...generateHouseholds(area2Id, chw2Id, 5, 5, { low: 3, moderate: 1, high: 1, critical: 0 }));
-  }
-
-  // CHW3 gets 5 households in Ward 7 (4 low, 1 moderate)
-  // Codes: HH-011 to HH-015
-  const chw3Id = userIds['chw3@demo.com'];
-  if (chw3Id) {
-    const area3Id = areaMap.get('Ward 7, Kavrepalanchok')!;
-    allHouseholds.push(...generateHouseholds(area3Id, chw3Id, 10, 5, { low: 4, moderate: 1, high: 0, critical: 0 }));
-  }
-
-  const { data: households, error: householdsError } = await supabase
+  const { data: existingHouseholds, error: existingHouseholdsError } = await supabase
     .from('households')
-    .insert(allHouseholds)
-    .select();
+    .select('id, code')
+    .in('code', demoHouseholds.map((household) => household.code));
 
-  if (householdsError) {
-    console.error('Failed to create households:', householdsError);
+  if (existingHouseholdsError) {
+    console.error('Failed to load existing households:', existingHouseholdsError);
     process.exit(1);
   }
-  console.log(`   Created ${households.length} households\n`);
+
+  const missingHouseholds = filterMissingHouseholds(
+    demoHouseholds,
+    new Set((existingHouseholds ?? []).map((household) => household.code))
+  );
+
+  let insertedHouseholds: Array<{
+    id: string;
+    code: string;
+    assigned_chw_id: string;
+    latest_risk_level: RiskLevel;
+  }> = [];
+
+  if (missingHouseholds.length > 0) {
+    const { data, error } = await supabase
+      .from('households')
+      .insert(missingHouseholds)
+      .select('id, code, assigned_chw_id, latest_risk_level');
+
+    if (error) {
+      console.error('Failed to create missing households:', error);
+      process.exit(1);
+    }
+
+    insertedHouseholds = (data ?? []) as typeof insertedHouseholds;
+  }
+
+  console.log(
+    `   Created ${insertedHouseholds.length} missing households (${demoHouseholds.length} total demo households defined)\n`
+  );
 
   // 4. Create sample visits for each household
-  console.log('📋 Creating sample visits...');
+  console.log('📋 Creating sample visits for new households...');
   interface VisitInsert {
     household_id: string;
     chw_id: string;
@@ -301,7 +296,7 @@ async function seed() {
   }
   const visits: VisitInsert[] = [];
 
-  for (const household of households) {
+  for (const household of insertedHouseholds) {
     // Create 1-2 visits per household
     const visitCount = Math.random() > 0.5 ? 2 : 1;
     const riskLevel = household.latest_risk_level as RiskLevel;
@@ -330,23 +325,62 @@ async function seed() {
     }
   }
 
-  const { data: insertedVisits, error: visitsError } = await supabase
-    .from('visits')
-    .insert(visits)
-    .select();
+  let insertedVisits: Array<{
+    household_id: string;
+    visit_date: string;
+    total_score: number;
+    risk_level: RiskLevel;
+  }> = [];
 
-  if (visitsError) {
-    console.error('Failed to create visits:', visitsError);
-    process.exit(1);
+  if (visits.length > 0) {
+    const { data, error } = await supabase
+      .from('visits')
+      .insert(visits)
+      .select('household_id, visit_date, total_score, risk_level');
+
+    if (error) {
+      console.error('Failed to create visits:', error);
+      process.exit(1);
+    }
+
+    insertedVisits = (data ?? []) as typeof insertedVisits;
   }
   console.log(`   Created ${insertedVisits.length} sample visits\n`);
+
+  // 5. Update household latest_risk to match latest visit for each household
+  console.log('🔄 Syncing household risk with latest visits...');
+  const householdLatestVisit = new Map<string, typeof insertedVisits[0]>();
+
+  // Find the latest visit for each household
+  for (const visit of insertedVisits) {
+    const existing = householdLatestVisit.get(visit.household_id);
+    if (!existing || visit.visit_date > existing.visit_date) {
+      householdLatestVisit.set(visit.household_id, visit);
+    }
+  }
+
+  // Update each household with its latest visit's risk values
+  for (const [householdId, visit] of householdLatestVisit) {
+    const { error: updateError } = await supabase
+      .from('households')
+      .update({
+        latest_risk_score: visit.total_score,
+        latest_risk_level: visit.risk_level,
+      })
+      .eq('id', householdId);
+
+    if (updateError) {
+      console.error(`   Failed to update household ${householdId}:`, updateError);
+    }
+  }
+  console.log(`   Updated ${householdLatestVisit.size} households with latest visit risk\n`);
 
   // Summary
   console.log('✅ Seed completed successfully!\n');
   console.log('📊 Summary:');
-  console.log(`   Areas: ${areas.length}`);
+  console.log(`   Areas: ${areaMap.size}`);
   console.log(`   Users: ${Object.keys(userIds).length}`);
-  console.log(`   Households: ${households.length}`);
+  console.log(`   Households added this run: ${insertedHouseholds.length}`);
   console.log(`   Visits: ${insertedVisits.length}`);
   console.log('\n👤 Demo accounts:');
   DEMO_USERS.forEach(u => {
