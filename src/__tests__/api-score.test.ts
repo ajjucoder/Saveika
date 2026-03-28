@@ -75,7 +75,7 @@ vi.mock('../lib/supabase/server', () => ({
 
 vi.mock('../lib/supabase/admin', () => ({
   getSupabaseAdminClient: vi.fn(() => mockAdminClient),
-  insertVisitWithRiskUpdate: () => mockInsertVisitWithRiskUpdate(),
+  insertVisitWithRiskUpdate: (...args: unknown[]) => mockInsertVisitWithRiskUpdate(...args),
 }));
 
 vi.mock('../lib/scoring', () => ({
@@ -88,12 +88,16 @@ describe('POST /api/score', () => {
     responses: {
       sleep: 1,
       appetite: 1,
-      withdrawal: 2,
-      trauma: 0,
       activities: 1,
       hopelessness: 1,
+      withdrawal: 2,
+      trauma: 0,
+      fear_flashbacks: 0,
+      psychosis_signs: 0,
       substance: 0,
+      substance_neglect: 0,
       self_harm: 0,
+      wish_to_die: 0,
     },
     notes: 'Test notes',
   };
@@ -253,7 +257,16 @@ describe('POST /api/score', () => {
           responses: {
             sleep: 1,
             appetite: 1,
-            // missing withdrawal, trauma, etc.
+            activities: 1,
+            hopelessness: 1,
+            withdrawal: 1,
+            trauma: 0,
+            fear_flashbacks: 0,
+            psychosis_signs: 0,
+            substance: 0,
+            substance_neglect: 0,
+            self_harm: 0,
+            // missing wish_to_die
           },
         }),
       });
@@ -429,6 +442,35 @@ describe('POST /api/score', () => {
       expect(data).toHaveProperty('explanation_en');
       expect(data).toHaveProperty('explanation_ne');
       expect(data).toHaveProperty('scoring_method');
+    });
+
+    it('should persist all 12 responses on success', async () => {
+      const request = new Request('http://localhost/api/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validRequest),
+      });
+
+      await POST(request);
+
+      expect(mockInsertVisitWithRiskUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          responses: {
+            sleep: 1,
+            appetite: 1,
+            activities: 1,
+            hopelessness: 1,
+            withdrawal: 2,
+            trauma: 0,
+            fear_flashbacks: 0,
+            psychosis_signs: 0,
+            substance: 0,
+            substance_neglect: 0,
+            self_harm: 0,
+            wish_to_die: 0,
+          },
+        })
+      );
     });
 
     it('should return correct values from scoring', async () => {

@@ -6,6 +6,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,9 +36,13 @@ export function VisitForm({ households }: VisitFormProps) {
   const [result, setResult] = useState<ScoreResponse | null>(null);
   const [showFallbackToast, setShowFallbackToast] = useState(false);
 
+  const answeredCount = SIGNAL_KEYS.filter(
+    (key) => responses[key as keyof VisitResponses] !== undefined
+  ).length;
   const allSignalsAnswered = SIGNAL_KEYS.every(
     (key) => responses[key as keyof VisitResponses] !== undefined
   );
+  const progressValue = (answeredCount / SIGNAL_KEYS.length) * 100;
 
   const handleResponseChange = useCallback((key: keyof VisitResponses, value: SignalValue) => {
     setResponses((prev) => ({ ...prev, [key]: value }));
@@ -185,6 +190,23 @@ export function VisitForm({ households }: VisitFormProps) {
         </CardContent>
       </Card>
 
+      <Card className="sticky top-4 z-10 border-primary/15 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">{t('visit.progressTitle') || 'Screening progress'}</p>
+              <p className="text-xs text-muted-foreground">
+                {answeredCount} / {SIGNAL_KEYS.length} answered
+              </p>
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">
+              {Math.round(progressValue)}%
+            </span>
+          </div>
+          <Progress value={progressValue} className="h-2" />
+        </CardContent>
+      </Card>
+
       {/* Screening Signals */}
       <div className="space-y-4">
         {SCREENING_SIGNALS.map((signal, index) => {
@@ -193,7 +215,7 @@ export function VisitForm({ households }: VisitFormProps) {
 
           return (
             <Card key={signal.key}>
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex items-start gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
                     {index + 1}

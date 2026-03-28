@@ -82,9 +82,27 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     // Find submit button
     const submitButton = screen.getByRole('button', { name: /submit/i });
     
-    // BUG: Submit button should be disabled because no signals explicitly answered
-    // but currently it's enabled because all signals initialize to 0
+    // Regression check: submit must stay disabled until answers are explicitly selected.
     expect(submitButton).toBeDisabled();
+  });
+
+  it('should show progress as answers are completed', async () => {
+    const user = userEvent.setup();
+    renderVisitForm();
+
+    // Select a household
+    const householdSelect = screen.getByRole('combobox', { name: '' });
+    await user.click(householdSelect);
+    const option = await screen.findByRole('option', { name: 'HH-001' });
+    await user.click(option);
+
+    expect(screen.getByText('0 / 12 answered')).toBeInTheDocument();
+
+    // Answer only the first signal (sleep) by clicking on the first "Mild / sometimes" radio
+    const mildRadios = screen.getAllByRole('radio', { name: 'Mild / sometimes' });
+    await user.click(mildRadios[0]); // Click the first one (for sleep signal)
+
+    expect(screen.getByText('1 / 12 answered')).toBeInTheDocument();
   });
 
   it('should not allow submission when only some signals are answered', async () => {
@@ -103,11 +121,11 @@ describe('VisitForm - Explicit Answer Requirement', () => {
 
     const submitButton = screen.getByRole('button', { name: /submit/i });
     
-    // Submit should still be disabled because only 1 of 8 signals answered
+    // Submit should still be disabled because only 1 of 12 signals answered
     expect(submitButton).toBeDisabled();
   });
 
-  it('should allow submission only when all 8 signals are explicitly answered', async () => {
+  it('should allow submission only when all 12 signals are explicitly answered', async () => {
     const user = userEvent.setup();
     renderVisitForm();
 
@@ -117,12 +135,12 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     const option = await screen.findByRole('option', { name: 'HH-001' });
     await user.click(option);
 
-    // Answer all 8 signals - click "Not observed" for each
+    // Answer all 12 signals - click "Not observed" for each
     // The radio buttons are labeled with the option text
     const notObservedOptions = screen.getAllByRole('radio', { name: 'Not observed' });
     
-    // There should be 8 "Not observed" radio buttons (one for each signal)
-    expect(notObservedOptions).toHaveLength(8);
+    // There should be 12 "Not observed" radio buttons (one for each signal)
+    expect(notObservedOptions).toHaveLength(12);
     
     for (const radio of notObservedOptions) {
       await user.click(radio);
@@ -130,7 +148,9 @@ describe('VisitForm - Explicit Answer Requirement', () => {
 
     const submitButton = screen.getByRole('button', { name: /submit/i });
     
-    // Now submit should be enabled because all 8 signals are explicitly answered
+    expect(screen.getByText('12 / 12 answered')).toBeInTheDocument();
+
+    // Now submit should be enabled because all 12 signals are explicitly answered
     expect(submitButton).toBeEnabled();
   });
 
@@ -144,7 +164,7 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     const option = await screen.findByRole('option', { name: 'HH-001' });
     await user.click(option);
 
-    // Answer all 8 signals as "Not observed"
+    // Answer all 12 signals as "Not observed"
     const notObservedOptions = screen.getAllByRole('radio', { name: 'Not observed' });
     for (const radio of notObservedOptions) {
       await user.click(radio);
@@ -168,12 +188,16 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     expect(body.responses).toEqual({
       sleep: 0,
       appetite: 0,
-      withdrawal: 0,
-      trauma: 0,
       activities: 0,
       hopelessness: 0,
+      withdrawal: 0,
+      trauma: 0,
+      fear_flashbacks: 0,
+      psychosis_signs: 0,
       substance: 0,
+      substance_neglect: 0,
       self_harm: 0,
+      wish_to_die: 0,
     });
   });
 });

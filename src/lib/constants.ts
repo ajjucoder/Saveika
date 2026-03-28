@@ -4,17 +4,17 @@ import type { RiskLevel } from './types';
 
 // Risk level thresholds
 export const RISK_THRESHOLDS: Record<RiskLevel, { min: number; max: number }> = {
-  low: { min: 0, max: 30 },
-  moderate: { min: 31, max: 60 },
-  high: { min: 61, max: 80 },
-  critical: { min: 81, max: 100 },
+  low: { min: 0, max: 25 },
+  moderate: { min: 26, max: 50 },
+  high: { min: 51, max: 75 },
+  critical: { min: 76, max: 100 },
 };
 
 // Get risk level from score
 export function getRiskLevelFromScore(score: number): RiskLevel {
-  if (score <= 30) return 'low';
-  if (score <= 60) return 'moderate';
-  if (score <= 80) return 'high';
+  if (score <= 25) return 'low';
+  if (score <= 50) return 'moderate';
+  if (score <= 75) return 'high';
   return 'critical';
 }
 

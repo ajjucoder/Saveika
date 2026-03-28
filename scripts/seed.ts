@@ -86,10 +86,26 @@ function generateHouseholds(
 // Generate sample visit responses based on risk level
 function generateVisitResponses(riskLevel: string): Record<string, number> {
   const baseValues: Record<string, Record<string, number>> = {
-    low: { sleep: 0, appetite: 0, withdrawal: 0, trauma: 0, activities: 0, hopelessness: 0, substance: 0, self_harm: 0 },
-    moderate: { sleep: 1, appetite: 1, withdrawal: 1, trauma: 0, activities: 1, hopelessness: 1, substance: 0, self_harm: 0 },
-    high: { sleep: 2, appetite: 2, withdrawal: 2, trauma: 1, activities: 2, hopelessness: 2, substance: 1, self_harm: 1 },
-    critical: { sleep: 3, appetite: 3, withdrawal: 3, trauma: 2, activities: 3, hopelessness: 3, substance: 2, self_harm: 2 },
+    low: {
+      sleep: 0, appetite: 0, activities: 0, hopelessness: 0,
+      withdrawal: 0, trauma: 0, fear_flashbacks: 0, psychosis_signs: 0,
+      substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 0,
+    },
+    moderate: {
+      sleep: 1, appetite: 1, activities: 1, hopelessness: 1,
+      withdrawal: 1, trauma: 0, fear_flashbacks: 0, psychosis_signs: 0,
+      substance: 0, substance_neglect: 0, self_harm: 0, wish_to_die: 0,
+    },
+    high: {
+      sleep: 2, appetite: 2, activities: 2, hopelessness: 2,
+      withdrawal: 2, trauma: 1, fear_flashbacks: 1, psychosis_signs: 2,
+      substance: 1, substance_neglect: 1, self_harm: 0, wish_to_die: 0,
+    },
+    critical: {
+      sleep: 3, appetite: 3, activities: 3, hopelessness: 3,
+      withdrawal: 3, trauma: 2, fear_flashbacks: 2, psychosis_signs: 3,
+      substance: 2, substance_neglect: 2, self_harm: 2, wish_to_die: 1,
+    },
   };
 
   const responses: Record<string, number> = { ...(baseValues[riskLevel] || baseValues.low) };

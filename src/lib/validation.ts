@@ -14,12 +14,16 @@ const signalValueSchema = z.union([
 export const visitResponsesSchema = z.object({
   sleep: signalValueSchema,
   appetite: signalValueSchema,
-  withdrawal: signalValueSchema,
-  trauma: signalValueSchema,
   activities: signalValueSchema,
   hopelessness: signalValueSchema,
+  withdrawal: signalValueSchema,
+  trauma: signalValueSchema,
+  fear_flashbacks: signalValueSchema,
+  psychosis_signs: signalValueSchema,
   substance: signalValueSchema,
+  substance_neglect: signalValueSchema,
   self_harm: signalValueSchema,
+  wish_to_die: signalValueSchema,
 });
 
 // Score request schema
