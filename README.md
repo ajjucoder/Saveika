@@ -116,25 +116,30 @@ Supervisor:  supervisor@demo.com / demo1234
   <tr>
     <td align="center">
       <img src="public/team/aejju-singh.png" alt="Aejju Singh" width="180" /><br />
-      <strong>Aejju Singh</strong>
+      <strong>Aejju Singh</strong><br />
+      <a href="https://github.com/ajjucoder">@ajjucoder</a>
     </td>
     <td align="center">
       <img src="public/team/nabin-joshi.jpeg" alt="Nabin Joshi" width="180" /><br />
-      <strong>Nabin Joshi</strong>
+      <strong>Nabin Joshi</strong><br />
+      <a href="https://github.com/Nabin-16">@Nabin-16</a>
     </td>
     <td align="center">
       <img src="public/team/dipika.jpeg" alt="Dipika" width="180" /><br />
-      <strong>Dipika</strong>
+      <strong>Dipika</strong><br />
+      <a href="https://github.com/notdipika">@notdipika</a>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="public/team/arnab.jpg" alt="Arnab" width="180" /><br />
-      <strong>Arnab</strong>
+      <strong>Arnab</strong><br />
+      <a href="https://github.com/arnabmanandhar">@arnabmanandhar</a>
     </td>
     <td align="center">
       <img src="public/team/karuna.jpg" alt="Karuna" width="180" /><br />
-      <strong>Karuna</strong>
+      <strong>Karuna</strong><br />
+      <a href="https://github.com/karkikaruna">@karkikaruna</a>
     </td>
     <td></td>
   </tr>
