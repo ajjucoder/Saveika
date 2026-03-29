@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       specialist_type: scoreResult.specialist_type || null,
       patient_name: patient_name || null,
       patient_age: patient_age || null,
-      patient_gender: (patient_gender as 'Male' | 'Female' | 'Other') || null,
+      patient_gender: patient_gender || null,
       notes: notes || null,
     });
 

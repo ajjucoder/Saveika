@@ -33,7 +33,7 @@ export const scoreRequestSchema = z.object({
   notes: z.string().max(1000).optional(),
   patient_name: z.string().optional(),
   patient_age: z.coerce.number().optional(),
-  patient_gender: z.string().optional(),
+  patient_gender: z.enum(['Male', 'Female', 'Other']).optional(),
 });
 
 // Login request schema
