@@ -125,7 +125,7 @@ export async function insertVisitWithRiskUpdate(visitData: VisitInsert): Promise
     throw new Error(`Failed to insert visit: ${visitError.message}`);
   }
 
-  // Try to update household risk
+  // Try to update household risk - failure here must NOT roll back the visit
   try {
     await updateHouseholdRisk(
       visitData.household_id,
@@ -133,22 +133,8 @@ export async function insertVisitWithRiskUpdate(visitData: VisitInsert): Promise
       visitData.risk_level
     );
   } catch (riskUpdateError) {
-    // Compensating transaction: delete the visit if household update fails
-    // This ensures we don't leave orphaned visits without updated household risk
-    console.error('Household risk update failed, rolling back visit:', riskUpdateError);
-
-    const { error: deleteError } = await admin
-      .from('visits')
-      .delete()
-      .eq('id', visit.id);
-
-    if (deleteError) {
-      console.error('Failed to rollback visit after household update failure:', deleteError);
-      // Log but still throw the original error
-    }
-
-    // Throw the original error
-    throw riskUpdateError;
+    // Log but do not fail the request - the visit was saved successfully
+    console.error('Household risk update failed (non-fatal):', riskUpdateError);
   }
 
   return visit;
