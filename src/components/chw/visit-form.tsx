@@ -609,7 +609,7 @@ export function VisitForm({ households }: VisitFormProps) {
         <div className="space-y-3">
           {SCREENING_SIGNALS.map((signal, index) => {
             const currentValue = responses[signal.key as keyof VisitResponses];
-            const signalLabel = locale === 'ne' ? signal.question_ne : signal.label_en;
+            const signalLabel = locale === 'ne' ? signal.question_ne : signal.question_en;
             const isAnswered = currentValue !== undefined;
 
             return (

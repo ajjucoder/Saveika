@@ -114,6 +114,19 @@ describe('VisitForm - Explicit Answer Requirement', () => {
     expect(getProgressSummary('1/12')).toBeInTheDocument();
   });
 
+  it('shows full English question copy in the screening section', () => {
+    renderVisitForm();
+
+    expect(
+      screen.getByText('Question 1: Has this person shown changes in sleep?')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Question 12: Has this person expressed wanting to die or not wanting to live?'
+      )
+    ).toBeInTheDocument();
+  });
+
   it('should not allow submission when only some signals are answered', async () => {
     const user = userEvent.setup();
     renderVisitForm();

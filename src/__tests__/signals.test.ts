@@ -35,10 +35,12 @@ describe('Screening Signals', () => {
     expect(actualKeys.sort()).toEqual(requiredKeys.sort());
   });
 
-  it('should have both English and Nepali labels', () => {
+  it('should have both English and Nepali labels and question copy', () => {
     SCREENING_SIGNALS.forEach(signal => {
       expect(signal.label_en).toBeTruthy();
       expect(signal.label_ne).toBeTruthy();
+      expect(signal.question_en).toBeTruthy();
+      expect(signal.question_ne).toBeTruthy();
       expect(signal.label_en).not.toBe(signal.label_ne);
     });
   });
@@ -95,6 +97,7 @@ describe('Signal Helpers', () => {
     expect(signal).toBeDefined();
     expect(signal?.key).toBe('sleep');
     expect(signal?.label_en).toBe('Sleep changes');
+    expect(signal?.question_en).toBe('Question 1: Has this person shown changes in sleep?');
   });
 
   it('should return undefined for unknown key', () => {
